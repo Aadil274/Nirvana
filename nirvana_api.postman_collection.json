@@ -1,0 +1,206 @@
+{
+  "info": {
+    "name": "Nirvana Climate Resilience API (v1)",
+    "description": "RESTful collection for Nirvana: Hyperlocal Climate Risk Alerts, Hydrological Intelligence & Municipal Response Planning.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "health"]
+        }
+      }
+    },
+    {
+      "name": "Data Sources Health Monitor",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/data-sources/status",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "data-sources", "status"]
+        }
+      }
+    },
+    {
+      "name": "Get Monitored Wards Risk",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/risk/wards?horizon=now",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "risk", "wards"],
+          "query": [{ "key": "horizon", "value": "now" }]
+        }
+      }
+    },
+    {
+      "name": "Risk Explainability (SHAP)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/risk/explain?cell_id=ward-72",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "risk", "explain"],
+          "query": [{ "key": "cell_id", "value": "ward-72" }]
+        }
+      }
+    },
+    {
+      "name": "Weather Forecast (Open-Meteo)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/forecast?lat=17.385&lng=78.4867",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "forecast"],
+          "query": [
+            { "key": "lat", "value": "17.385" },
+            { "key": "lng", "value": "78.4867" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Active Emergency Alerts",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/alerts/active?lang=te",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "alerts", "active"],
+          "query": [{ "key": "lang", "value": "te" }]
+        }
+      }
+    },
+    {
+      "name": "List Nearby Shelters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/shelters?lat=17.382&lng=78.423&verified_only=true",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "shelters"],
+          "query": [
+            { "key": "lat", "value": "17.382" },
+            { "key": "lng", "value": "78.423" },
+            { "key": "verified_only", "value": "true" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Submit Citizen Field Report",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ward_id\": \"ward-72\",\n  \"ward_name\": \"Nadeem Colony\",\n  \"category\": \"waterlogging\",\n  \"severity\": \"Severe\",\n  \"description\": \"Water entering ground-floor basements on Street 4.\",\n  \"location_name\": \"Street 4, Nadeem Colony\",\n  \"lat\": 17.3820,\n  \"lng\": 78.4235,\n  \"has_audio_note\": true\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/reports",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "reports"]
+        }
+      }
+    },
+    {
+      "name": "Contextual Safety Guidance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/guidance?hazard=flood&persona=low_lying&lang=en",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "guidance"],
+          "query": [
+            { "key": "hazard", "value": "flood" },
+            { "key": "persona", "value": "low_lying" },
+            { "key": "lang", "value": "en" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Request Phone OTP",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"+91-9876543210\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/auth/otp/request",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "auth", "otp", "request"]
+        }
+      }
+    },
+    {
+      "name": "Municipal KPIs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/v1/dashboard/kpis",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "dashboard", "kpis"]
+        }
+      }
+    },
+    {
+      "name": "Run What-If Simulation",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rainfall_rate_mm_hr\": 75.0,\n  \"temperature_c\": 36.0,\n  \"drainage_blockage_pct\": 40.0\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/v1/simulate",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "v1", "simulate"]
+        }
+      }
+    }
+  ]
+}

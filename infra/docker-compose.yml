@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+    container_name: nirvana-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NODE_ENV=production
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    container_name: nirvana-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://nirvana_user:nirvana_secure_pass@db:5432/nirvana_db
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+      - OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: nirvana-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=nirvana_user
+      - POSTGRES_PASSWORD=nirvana_secure_pass
+      - POSTGRES_DB=nirvana_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: nirvana-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

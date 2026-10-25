@@ -1,0 +1,98 @@
+{
+  "templates": [
+    {
+      "id": "tpl-flood-severe-lowlying",
+      "hazard": "flood",
+      "severity": "severe",
+      "persona": "low_lying",
+      "title": {
+        "en": "URGENT FLOOD EVACUATION ADVISORY: {ward_name}",
+        "hi": "अति आवश्यक बाढ़ चेतावनी: {ward_name}",
+        "te": "అత్యవసర వరద తరలింపు హెచ్చరిక: {ward_name}",
+        "ta": "அவசர வெள்ள எச்சரிக்கை: {ward_name}"
+      },
+      "body": {
+        "en": "Water levels projected to rise 30cm-60cm in {time_window} due to {rainfall_rate}mm/hr rainfall. Ground-floor residents must move valuables to upper floors immediately and relocate to {shelter_name}. Do not enter flooded underpasses.",
+        "hi": "{rainfall_rate} मिमी/घंटा बारिश के कारण {time_window} में जल स्तर 30-60 सेमी बढ़ने का अनुमान है। भूतल निवासी तुरंत अपना सामान ऊपरी मंजिल पर ले जाएं और {shelter_name} में शरण लें। जलभराव वाले रास्तों पर न जाएं।",
+        "te": "{rainfall_rate} మి.మీ/గం వర్షపాతం కారణంగా రాబోయే {time_window} లో నీటి మట్టం 30-60 సెం.మీ పెరిగే అవకాశం ఉంది. గ్రౌండ్ ఫ్లోర్ నివాసితులు విలువైన వస్తువులను పైకి చేర్చి వెంటనే {shelter_name} కు వెళ్లండి.",
+        "ta": "{rainfall_rate} மிமீ/மணி நேர மழை காரணமாக {time_window}ல் நீர்மட்டம் 30-60 செமீ உயரும் என கணிக்கப்பட்டுள்ளது. தரைத்தள வாசிகள் உடனே பாதுகாப்பான இடமான {shelter_name}க்கு செல்லவும்."
+      },
+      "action_checklist": [
+        "Disconnect ground-level electrical main switch",
+        "Move medicines, documents and mobile phones to higher shelves",
+        "Proceed on foot via higher-ground exit route to nearest verified shelter",
+        "Do not drive or walk through flowing water above ankle level"
+      ]
+    },
+    {
+      "id": "tpl-flood-high-general",
+      "hazard": "flood",
+      "severity": "high",
+      "persona": "general",
+      "title": {
+        "en": "HIGH WATERLOGGING ALERT: {ward_name}",
+        "hi": "उच्च जलभराव चेतावनी: {ward_name}",
+        "te": "తీవ్ర నీటి నిల్వ హెచ్చరిక: {ward_name}",
+        "ta": "கடுமையான வெள்ள அபாய எச்சரிக்கை: {ward_name}"
+      },
+      "body": {
+        "en": "Heavy precipitation ({rainfall_rate}mm/hr) expected over {ward_name} during the next {time_window}. Local storm drains are running at peak capacity. Avoid non-essential road travel. Nearest relief shelter: {shelter_name}.",
+        "hi": "{ward_name} में अगले {time_window} में भारी बारिश ({rainfall_rate} मिमी/घंटा) की संभावना है। नाले पूरी क्षमता पर हैं। गैर-जरूरी यात्रा से बचें। निकटतम आश्रय: {shelter_name}।",
+        "te": "{ward_name} పరిధిలో రాబోయే {time_window} లో భారీ వర్షం ({rainfall_rate} మి.మీ/గం) కురిసే అవకాశం ఉంది. డ్రెయిన్లు నిండి ప్రవహిస్తున్నాయి. అత్యవసరమైతే తప్ప ప్రయాణాలు వద్దు.",
+        "ta": "{ward_name} பகுதியில் அடுத்த {time_window}ல் பலத்த மழை ({rainfall_rate} மிமீ/மணி) பெய்யக்கூடும். தேவையற்ற பயணங்களை தவிர்க்கவும்."
+      },
+      "action_checklist": [
+        "Keep torch and phone fully charged",
+        "Store 2 days drinking water and emergency dry rations",
+        "Monitor live municipal drain updates on Nirvana app"
+      ]
+    },
+    {
+      "id": "tpl-heat-severe-worker",
+      "hazard": "heat",
+      "severity": "severe",
+      "persona": "outdoor_worker",
+      "title": {
+        "en": "SEVERE HEATWAVE PROTOCOL: Mandatory Shade & Hydration ({ward_name})",
+        "hi": "भीषण लू चेतावनी: अनिवार्य छाया एवं जल सेवन ({ward_name})",
+        "te": "తీవ్రమైన వడగాల్పుల హెచ్చరిక: మధ్యాహ్నం పనిచేయవద్దు ({ward_name})",
+        "ta": "கடுமையான வெப்ப அலை எச்சரிக்கை ({ward_name})"
+      },
+      "body": {
+        "en": "Ambient temperature exceeding {temp_c}°C with wet-bulb heat index of {heat_index_c}°C in {ward_name}. Direct sun exposure between 12:00 PM and 4:00 PM poses immediate risk of heat stroke. Access free cool drinking water at {shelter_name}.",
+        "hi": "{ward_name} में तापमान {temp_c}°C और हीट इंडेक्स {heat_index_c}°C से अधिक है। दोपहर 12 से 4 बजे तक धूप में काम करना जानलेवा हो सकता है। {shelter_name} पर शीतल पेयजल व छाया उपलब्ध है।",
+        "te": "{ward_name} లో ఉష్ణోగ్రత {temp_c}°C మించి వడగాల్పులు వీస్తున్నాయి. మధ్యాహ్నం 12 నుండి సాయంత్రం 4 గంటల వరకు ఎండలో తిరగవద్దు. ఉచిత తాగునీరు మరియు చల్లని నీడ కొరకు {shelter_name} ను సంప్రదించండి.",
+        "ta": "{ward_name}ல் வெப்பநிலை {temp_c}°C தாண்டியுள்ளது. மதியம் 12 மணி முதல் மாலை 4 மணி வரை நேரடி வெயிலை தவிர்க்கவும்."
+      },
+      "action_checklist": [
+        "Stop outdoor physical labor between 12:00 PM - 04:00 PM",
+        "Drink ORS / coconut water every 30 minutes even if not thirsty",
+        "Rest in designated cooling shelters or shaded tree canopies",
+        "Report dizziness, confusion or cessation of sweating to 108 immediately"
+      ]
+    },
+    {
+      "id": "tpl-heat-high-elderly",
+      "hazard": "heat",
+      "severity": "high",
+      "persona": "elderly",
+      "title": {
+        "en": "SENIOR CITIZEN HEAT ADVISORY: {ward_name}",
+        "hi": "वरिष्ठ नागरिक ग्रीष्मकालीन परामर्श: {ward_name}",
+        "te": "వృద్ధుల రక్షణ కొరకు ఎండ వేడిమి హెచ్చరిక: {ward_name}",
+        "ta": "முதியோர்களுக்கான வெப்ப எச்சரிக்கை: {ward_name}"
+      },
+      "body": {
+        "en": "Night-time temperatures remain uncomfortably warm ({temp_c}°C) with daytime peaks over 42°C in {ward_name}. Seniors with cardiovascular or respiratory conditions should stay indoors in ventilated or cooled rooms.",
+        "hi": "{ward_name} में रात का तापमान भी गर्म ({temp_c}°C) बना हुआ है और दिन में 42°C से अधिक रहेगा। वरिष्ठ नागरिक घर के ठंडे कमरे में रहें और खूब पानी पिएं।",
+        "te": "{ward_name} లో రాత్రి ఉష్ణోగ్రతలు కూడా ఎక్కువగా ఉన్నాయి. గుండె, బీపీ సమస్యలు ఉన్న పెద్దలు చల్లని ప్రదేశాలలో విశ్రాంతి తీసుకోవాలి.",
+        "ta": "{ward_name} பகுதியில் இரவிலும் வெப்பம் அதிகமாக இருக்கும். முதியவர்கள் காற்றோட்டமான அறைகளில் இருக்கவும்."
+      },
+      "action_checklist": [
+        "Wear loose light-colored cotton clothing",
+        "Sip water frequently, avoid caffeine or heavy meals",
+        "Keep emergency family contact and 108 speed-dial accessible"
+      ]
+    }
+  ]
+}

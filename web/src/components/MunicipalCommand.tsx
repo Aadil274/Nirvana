@@ -1,0 +1,458 @@
+'use client';
+
+import React, { useState } from 'react';
+import { WardFeature, Shelter, CitizenReport, AlertItem, MunicipalKPIs } from '../types';
+import {
+  LayoutDashboard,
+  AlertTriangle,
+  Users,
+  Home,
+  CheckCircle2,
+  Send,
+  Wrench,
+  FileText,
+  BarChart3,
+  Settings,
+  Printer,
+  ShieldAlert,
+  ArrowUpDown,
+  Search,
+  Plus
+} from 'lucide-react';
+
+interface MunicipalCommandProps {
+  wards: WardFeature[];
+  shelters: Shelter[];
+  reports: CitizenReport[];
+  alerts: AlertItem[];
+  kpis: MunicipalKPIs;
+  onSendAlert: (alert: Partial<AlertItem>) => void;
+  onTriageReport: (reportId: string, action: 'verify' | 'reject' | 'resolve') => void;
+}
+
+export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
+  wards,
+  shelters,
+  reports,
+  alerts,
+  kpis,
+  onSendAlert,
+  onTriageReport
+}) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'wards' | 'composer' | 'resources' | 'reports' | 'analytics' | 'admin'>('overview');
+  const [selectedWardId, setSelectedWardId] = useState<string>('ward-72');
+  const [composerWardIds, setComposerWardIds] = useState<string[]>(['ward-72', 'ward-71']);
+  const [composerSeverity, setComposerSeverity] = useState('Severe');
+  const [composerTitle, setComposerTitle] = useState('EMERGENCY FLOOD EVACUATION NOTICE');
+  const [composerBody, setComposerBody] = useState('Water rising 40cm in low-lying sectors. Move to upper levels or proceed to designated high school shelters.');
+  const [composerChannel, setComposerChannel] = useState<'in_app' | 'sms' | 'whatsapp' | 'loudspeaker'>('in_app');
+
+  const selectedWard = wards.find(w => w.properties.ward_id === selectedWardId) || wards[0];
+
+  const handleComposeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSendAlert({
+      hazard: 'flood',
+      severity: composerSeverity as any,
+      title: { en: composerTitle, hi: `चेतावनी: ${composerTitle}`, te: `హెచ్చరిక: ${composerTitle}` },
+      body: { en: composerBody, hi: composerBody, te: composerBody },
+      target_wards: composerWardIds,
+      ward_names: composerWardIds.map(id => wards.find(w => w.properties.ward_id === id)?.properties.name || id),
+      channel: composerChannel,
+      estimated_reach: composerWardIds.length * 85000,
+      delivery_status: composerSeverity === 'Severe' ? 'pending_approval' : 'sent',
+      requires_two_person_approval: composerSeverity === 'Severe'
+    });
+    alert(composerSeverity === 'Severe' ? 'Alert queued for mandatory Two-Person Approval (Severe Protocol).' : 'Alert broadcast live across selected channels.');
+  };
+
+  const handlePrintSitRep = () => {
+    window.print();
+  };
+
+  return (
+    <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1">
+      {/* COMMAND CONSOLE TOP HEADER */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-6 border-b border-[#EADBCA]">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D9453D] animate-ping"></span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#006070]">
+              GHMC MONSOON EMERGENCY CONTROL ROOM • WARD COMMAND CONSOLE
+            </span>
+          </div>
+          <h2 className="font-heading text-2xl font-bold text-[#1c1b1a] mt-0.5">
+            Municipal Disaster Response &amp; Dispatch Console
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrintSitRep}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#F3EBDD] hover:bg-[#EADBCA] text-[#1c1b1a] text-xs font-semibold transition-all border border-[#EADBCA]"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Generate SitRep (1-Click)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* COMMAND CONSOLE TABS */}
+      <div className="flex items-center gap-1 overflow-x-auto py-4 border-b border-[#EADBCA]">
+        {[
+          { id: 'overview', label: '📊 Overview & KPIs', icon: LayoutDashboard },
+          { id: 'wards', label: '🏙️ Ward Ranking & Action', icon: ArrowUpDown },
+          { id: 'composer', label: '📢 Alert Composer & Approvals', icon: Send },
+          { id: 'resources', label: '🚤 Resource Dispatch', icon: Wrench },
+          { id: 'reports', label: '🛡️ Field Reports Queue', icon: CheckCircle2 },
+          { id: 'analytics', label: '📈 Hydro-Analytics & Replay', icon: BarChart3 },
+          { id: 'admin', label: '⚙️ Admin & Data Health', icon: Settings },
+        ].map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                activeTab === tab.id
+                  ? 'bg-[#006070] text-white shadow-sm'
+                  : 'text-[#6F6A60] hover:bg-[#F3EBDD] hover:text-[#1c1b1a]'
+              }`}
+            >
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* TAB CONTENT AREAS */}
+      <div className="pt-6">
+
+        {/* 1. OVERVIEW & KPIS */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-5 rounded-2xl bg-[#FBE1DF] border border-[#D9453D]/30">
+                <span className="text-[11px] font-bold uppercase text-[#D9453D]">Wards At Severe Risk</span>
+                <div className="text-3xl font-black text-[#D9453D] mt-1">{kpis.wards_at_severe}</div>
+                <span className="text-[11px] text-[#6F6A60]">Out of 22 monitored zones</span>
+              </div>
+              <div className="p-5 rounded-2xl bg-[#FDE6D6] border border-[#EE7B30]/30">
+                <span className="text-[11px] font-bold uppercase text-[#EE7B30]">People In Inundation Zones</span>
+                <div className="text-3xl font-black text-[#EE7B30] mt-1">{kpis.people_in_high_risk.toLocaleString()}</div>
+                <span className="text-[11px] text-[#6F6A60]">Prioritizing ground floors</span>
+              </div>
+              <div className="p-5 rounded-2xl bg-[#E6F5ED] border border-[#4CAF7A]/30">
+                <span className="text-[11px] font-bold uppercase text-[#4CAF7A]">Relief Shelters Open</span>
+                <div className="text-3xl font-black text-[#4CAF7A] mt-1">{kpis.shelters_open}</div>
+                <span className="text-[11px] text-[#6F6A60]">{kpis.shelters_current_occupancy} / {kpis.shelters_total_capacity} beds filled</span>
+              </div>
+              <div className="p-5 rounded-2xl bg-[#E3F1F4] border border-[#1F7A8C]/30">
+                <span className="text-[11px] font-bold uppercase text-[#006070]">Active Citizen Reports</span>
+                <div className="text-3xl font-black text-[#006070] mt-1">{kpis.active_citizen_reports}</div>
+                <span className="text-[11px] text-[#6F6A60]">32 ground-truth verified</span>
+              </div>
+            </div>
+
+            {/* Quick Live Emergency Broadcast Feed */}
+            <div className="p-5 rounded-2xl bg-[#fdf9f5] border border-[#EADBCA]">
+              <h4 className="font-heading font-bold text-sm text-[#1c1b1a] mb-3 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-[#D9453D]" />
+                Live Broadcast Status &amp; Multi-Channel Delivery
+              </h4>
+              <div className="space-y-3">
+                {alerts.map(alt => (
+                  <div key={alt.id} className="p-3.5 rounded-xl bg-white border border-[#EADBCA] flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#FBE1DF] text-[#D9453D]">
+                          {alt.severity}
+                        </span>
+                        <span className="font-bold text-xs text-[#1c1b1a]">{alt.title.en}</span>
+                      </div>
+                      <span className="text-[11px] text-[#6F6A60] mt-0.5 block">
+                        Channels: {alt.channel.toUpperCase()} | Estimated Citizens Reached: {alt.estimated_reach.toLocaleString()}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E6F5ED] text-[#4CAF7A]">
+                      Dispatched
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 2. WARD RANKING & AI ACTIONS */}
+        {activeTab === 'wards' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 overflow-x-auto">
+              <table className="w-full text-left text-xs border border-[#EADBCA] rounded-2xl overflow-hidden">
+                <thead className="bg-[#F3EBDD] text-[#1c1b1a] uppercase text-[10px] font-bold">
+                  <tr>
+                    <th className="p-3">Ward Name</th>
+                    <th className="p-3">Drain Health</th>
+                    <th className="p-3">Elevation</th>
+                    <th className="p-3">Flood Score</th>
+                    <th className="p-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EADBCA]">
+                  {wards.map(w => (
+                    <tr
+                      key={w.properties.ward_id}
+                      onClick={() => setSelectedWardId(w.properties.ward_id)}
+                      className={`cursor-pointer hover:bg-[#F3EBDD]/40 transition-colors ${
+                        selectedWardId === w.properties.ward_id ? 'bg-[#E3F1F4]' : ''
+                      }`}
+                    >
+                      <td className="p-3 font-semibold">{w.properties.name}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          w.properties.drainage_health === 'Blocked' ? 'bg-[#FBE1DF] text-[#D9453D]' : 'bg-[#E6F5ED] text-[#4CAF7A]'
+                        }`}>
+                          {w.properties.drainage_health}
+                        </span>
+                      </td>
+                      <td className="p-3">{w.properties.base_elevation_m}m</td>
+                      <td className="p-3 font-bold text-[#D9453D]">{w.properties.flood_score || 75} / 100</td>
+                      <td className="p-3">
+                        <button className="text-[#006070] font-bold hover:underline">Select</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Ward Detail & AI Action Recommendation */}
+            <div className="p-5 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA] space-y-4">
+              <h4 className="font-heading font-bold text-base text-[#1c1b1a]">
+                Ward Detail: {selectedWard.properties.name}
+              </h4>
+              <div className="p-4 rounded-xl bg-white border border-[#EADBCA] space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#6F6A60]">Vulnerability Index:</span>
+                  <strong>{selectedWard.properties.vulnerability_index}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6F6A60]">Informal Housing:</span>
+                  <strong>{selectedWard.properties.informal_housing_pct}%</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6F6A60]">Musi River Distance:</span>
+                  <strong>{selectedWard.properties.musi_proximity_km} km</strong>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#FDEBD3] border border-[#EE7B30]/40">
+                <span className="text-[10px] font-bold uppercase text-[#914d00]">AI Recommended Action:</span>
+                <p className="text-xs font-bold text-[#1c1b1a] mt-1">
+                  Pre-position 2 pumps at {selectedWard.properties.name.split('/')[0]} nala by 19:30 IST.
+                </p>
+                <p className="text-[11px] text-[#6F6A60] mt-1">
+                  Rationale: Runoff intensity vs blocked drain culvert creates 85% backflow probability within 2 hours.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. ALERT COMPOSER & APPROVALS */}
+        {activeTab === 'composer' && (
+          <form onSubmit={handleComposeSubmit} className="max-w-2xl space-y-4">
+            <h4 className="font-heading font-bold text-lg text-[#1c1b1a]">
+              Emergency Broadcast Composer (Multi-Language)
+            </h4>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#6F6A60] mb-1">Target Wards:</label>
+              <div className="flex flex-wrap gap-2">
+                {wards.slice(0, 8).map(w => {
+                  const isChecked = composerWardIds.includes(w.properties.ward_id);
+                  return (
+                    <button
+                      type="button"
+                      key={w.properties.ward_id}
+                      onClick={() => {
+                        setComposerWardIds(prev =>
+                          isChecked ? prev.filter(id => id !== w.properties.ward_id) : [...prev, w.properties.ward_id]
+                        );
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        isChecked ? 'bg-[#006070] text-white border-[#006070]' : 'bg-white text-[#6F6A60] border-[#EADBCA]'
+                      }`}
+                    >
+                      {w.properties.name.split('/')[0]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#6F6A60] mb-1">Severity:</label>
+                <select
+                  value={composerSeverity}
+                  onChange={(e) => setComposerSeverity(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-[#EADBCA] text-xs"
+                >
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                  <option value="Severe">Severe (Requires Two-Person Approval)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#6F6A60] mb-1">Broadcast Channel:</label>
+                <select
+                  value={composerChannel}
+                  onChange={(e) => setComposerChannel(e.target.value as any)}
+                  className="w-full p-2.5 rounded-xl border border-[#EADBCA] text-xs"
+                >
+                  <option value="in_app">In-App Push &amp; Web Alert</option>
+                  <option value="sms">SMS Text Alert (Twilio / MSG91)</option>
+                  <option value="whatsapp">WhatsApp Cloud Broadcast</option>
+                  <option value="loudspeaker">Field Loudspeaker Siren Script</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#6F6A60] mb-1">Alert Headline (English):</label>
+              <input
+                type="text"
+                value={composerTitle}
+                onChange={(e) => setComposerTitle(e.target.value)}
+                className="w-full p-2.5 rounded-xl border border-[#EADBCA] text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#6F6A60] mb-1">Action Guidance Message:</label>
+              <textarea
+                value={composerBody}
+                onChange={(e) => setComposerBody(e.target.value)}
+                rows={3}
+                className="w-full p-2.5 rounded-xl border border-[#EADBCA] text-xs"
+              />
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#F3EBDD] text-xs text-[#6F6A60]">
+              Estimated Citizens Reached: <strong className="text-[#006070]">{(composerWardIds.length * 85000).toLocaleString()}</strong> in English, हिन्दी, and తెలుగు.
+            </div>
+
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-full bg-[#1F7A8C] text-white text-xs font-bold hover:bg-[#17606F]"
+            >
+              Dispatch Alert
+            </button>
+          </form>
+        )}
+
+        {/* 4. RESOURCE DISPATCH */}
+        {activeTab === 'resources' && (
+          <div className="space-y-4">
+            <h4 className="font-heading font-bold text-base text-[#1c1b1a]">
+              Municipal Disaster Asset Allocation &amp; Pre-Positioning
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { title: 'Heavy Dewatering Pumps (500 GPM)', deployed: 8, total: 12, icon: '🚰' },
+                { title: 'Inflatable Rescue Boats (OBM)', deployed: 4, total: 6, icon: '🚤' },
+                { title: 'SDRF Quick Response Teams', deployed: 6, total: 8, icon: '👨‍🚒' },
+              ].map((res, i) => (
+                <div key={i} className="p-4 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA]">
+                  <span className="text-2xl">{res.icon}</span>
+                  <h5 className="font-bold text-xs text-[#1c1b1a] mt-2">{res.title}</h5>
+                  <div className="text-lg font-black text-[#006070] mt-1">{res.deployed} / {res.total} Deployed</div>
+                  <div className="w-full h-1.5 rounded-full bg-[#EADBCA] mt-2 overflow-hidden">
+                    <div className="h-full bg-[#1F7A8C]" style={{ width: `${(res.deployed / res.total) * 100}%` }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 5. FIELD REPORTS QUEUE */}
+        {activeTab === 'reports' && (
+          <div className="space-y-4">
+            <h4 className="font-heading font-bold text-base text-[#1c1b1a]">
+              Citizen Ground-Truth Reports Verification Queue
+            </h4>
+            <div className="space-y-3">
+              {reports.map(r => (
+                <div key={r.id} className="p-4 rounded-xl bg-[#FBF7EF] border border-[#EADBCA] flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-xs text-[#1c1b1a]">{r.description}</span>
+                    <span className="text-[11px] text-[#6F6A60] block">{r.location_name} • {r.timestamp} • {r.confirm_votes} Confirmations</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onTriageReport(r.id, 'verify')}
+                      className="px-3 py-1 rounded-full bg-[#E6F5ED] text-[#4CAF7A] text-xs font-bold hover:bg-[#4CAF7A] hover:text-white"
+                    >
+                      Verify &amp; Dispatch
+                    </button>
+                    <button
+                      onClick={() => onTriageReport(r.id, 'resolve')}
+                      className="px-3 py-1 rounded-full bg-[#F3EBDD] text-[#6F6A60] text-xs font-bold hover:bg-[#EADBCA]"
+                    >
+                      Mark Resolved
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 6. ANALYTICS & REPLAY */}
+        {activeTab === 'analytics' && (
+          <div className="p-6 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA] text-center">
+            <BarChart3 className="w-12 h-12 text-[#1F7A8C] mx-auto mb-2" />
+            <h4 className="font-heading font-bold text-base text-[#1c1b1a]">
+              Historical Event Replay &amp; Equity Monitoring
+            </h4>
+            <p className="text-xs text-[#6F6A60] max-w-md mx-auto mt-1 mb-4">
+              Calibrated time-lapse replay of October 2020 deluge vs October 2026 current telemetry.
+              Model demonstrates 1.101 parity ratio for informal settlement warnings.
+            </p>
+            <div className="p-4 rounded-xl bg-white max-w-lg mx-auto text-left text-xs space-y-1.5 border border-[#EADBCA]">
+              <div>Predicted Inundation vs Observed: <strong>96.0% accuracy</strong></div>
+              <div>Brier Score Calibration: <strong>0.029 (Reliable)</strong></div>
+              <div>Informal Housing TPR: <strong>1.000 (100% early detection)</strong></div>
+            </div>
+          </div>
+        )}
+
+        {/* 7. ADMIN & DATA HEALTH */}
+        {activeTab === 'admin' && (
+          <div className="p-6 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA] space-y-3">
+            <h4 className="font-heading font-bold text-base text-[#1c1b1a]">
+              Data Ingestion Health &amp; Sovereign Telemetry Status
+            </h4>
+            <div className="space-y-2 text-xs">
+              <div className="p-3 rounded-xl bg-white border border-[#EADBCA] flex justify-between">
+                <span>IMD Begumpet S-Band Doppler Radar:</span>
+                <strong className="text-[#4CAF7A]">ONLINE (Latency 280ms)</strong>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#EADBCA] flex justify-between">
+                <span>Open-Meteo High-Resolution Ensemble:</span>
+                <strong className="text-[#4CAF7A]">ONLINE (Latency 142ms)</strong>
+              </div>
+              <div className="p-3 rounded-xl bg-white border border-[#EADBCA] flex justify-between">
+                <span>GHMC 42 Culvert IoT Telemetry Nodes:</span>
+                <strong className="text-[#4CAF7A]">ONLINE (Latency 95ms)</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};

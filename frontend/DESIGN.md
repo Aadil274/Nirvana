@@ -1,5 +1,5 @@
 ---
-name: NeighbourWatch Civic Climate System
+name: Nirvana Civic Climate System
 colors:
   surface: '#fdf9f5'
   surface-dim: '#ddd9d6'
