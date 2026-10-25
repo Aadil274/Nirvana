@@ -48,8 +48,8 @@ class VerifyShelterRequest(BaseModel):
 
 @router.get("")
 def list_shelters(
-    lat: Optional[float] = Query(None, ge=17.0, le=18.0),
-    lng: Optional[float] = Query(None, ge=78.0, le=79.0),
+    lat: Optional[float] = Query(None, ge=-90.0, le=90.0),
+    lng: Optional[float] = Query(None, ge=-180.0, le=180.0),
     verified_only: bool = Query(False),
     facility: Optional[str] = Query(None),
     ward_id: Optional[str] = Query(None)

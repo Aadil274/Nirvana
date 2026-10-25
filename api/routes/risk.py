@@ -108,35 +108,44 @@ def get_all_wards_risk(
 
 @router.get("")
 def get_risk_at_location(
-    lat: float = Query(..., ge=17.0, le=18.0),
-    lng: float = Query(..., ge=78.0, le=79.0),
+    lat: float = Query(..., ge=-90.0, le=90.0, description="Latitude in decimal degrees"),
+    lng: float = Query(..., ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
     horizon: str = Query("now", pattern="^(now|6h|24h|72h)$")
 ):
     """
     Finds nearest ward/cell to given coordinates and dynamically calculates real-time risk scores.
+    Accepts any valid global coordinates.
     """
     data = load_wards_geojson()
     best_ward = None
-    min_dist = float("inf")
+    min_dist_km = float("inf")
 
     for feat in data["features"]:
         coords = feat["geometry"]["coordinates"][0]
         centroid_lng = sum(p[0] for p in coords) / len(coords)
         centroid_lat = sum(p[1] for p in coords) / len(coords)
-        dist = ((lat - centroid_lat) ** 2 + (lng - centroid_lng) ** 2) ** 0.5
-        if dist < min_dist:
-            min_dist = dist
+        # Planar euclidean distance in km
+        d_km = (((lat - centroid_lat) * 111.0) ** 2 + ((lng - centroid_lng) * 105.0) ** 2) ** 0.5
+        if d_km < min_dist_km:
+            min_dist_km = d_km
             best_ward = feat
 
     if not best_ward:
-        raise HTTPException(status_code=404, detail="Coordinates outside pilot coverage (Hyderabad)")
+        best_ward = data["features"][0]
+        min_dist_km = 0.0
 
     computed = compute_ward_risk(best_ward["properties"], horizon=horizon)
+    coverage_note = None
+    if min_dist_km > 25.0:
+        coverage_note = f"Coordinates are {round(min_dist_km, 1)}km from central Hyderabad. Displaying nearest pilot telemetry from {computed['name']}."
+
     return {
         "ward_id": computed["ward_id"],
         "ward_name": computed["name"],
         "lat": lat,
         "lng": lng,
+        "distance_to_ward_km": round(min_dist_km, 2),
+        "coverage_note": coverage_note,
         "horizon": horizon,
         "flood": {
             "score": computed["flood_score"],
