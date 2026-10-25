@@ -1,77 +1,70 @@
-import requests
-from fastapi import APIRouter, Query
+"""
+Nirvana Civic Climate Resilience Platform
+Weather & Forecast API Route
+
+Provides live location-aware weather observations, hourly forecasts,
+multi-day projections, and city geocoding via Open-Meteo.
+"""
+
+from typing import Optional
+from fastapi import APIRouter, Query, HTTPException, status
+from api.services.weather_service import weather_service
 
 router = APIRouter(prefix="/forecast", tags=["Weather Forecast"])
 
 @router.get("")
 def get_forecast(
-    lat: float = Query(17.3850, ge=17.0, le=18.0),
-    lng: float = Query(78.4867, ge=78.0, le=79.0)
+    lat: float = Query(17.3850, ge=-90.0, le=90.0, description="Latitude in decimal degrees (-90 to 90)"),
+    lng: float = Query(78.4867, ge=-180.0, le=180.0, description="Longitude in decimal degrees (-180 to 180)"),
+    days: int = Query(7, ge=1, le=14, description="Number of forecast days (1 to 14)"),
+    refresh: bool = Query(False, description="Bypass in-memory cache and fetch fresh observations")
 ):
     """
-    Retrieves weather forecast (hourly rainfall, convective rain, temperature, humidity)
-    from Open-Meteo with fallback to local fixtures for offline resilience.
+    Retrieves accurate, real-time meteorological conditions and forecasts for the specified coordinates.
+    Data is sourced from Open-Meteo High-Resolution Numerical Weather Prediction (NWP) models.
     """
-    url = (
-        f"https://api.open-meteo.com/v1/forecast"
-        f"?latitude={lat}&longitude={lng}"
-        f"&hourly=temperature_2m,relative_humidity_2m,precipitation,rain"
-        f"&forecast_days=3&timezone=Asia%2FKolkata"
-    )
     try:
-        resp = requests.get(url, timeout=3.0)
-        if resp.status_code == 200:
-            data = resp.json()
-            hourly = data.get("hourly", {})
-            times = hourly.get("time", [])[:24]
-            rain = hourly.get("rain", [])[:24]
-            temp = hourly.get("temperature_2m", [])[:24]
-            humidity = hourly.get("relative_humidity_2m", [])[:24]
+        data = weather_service.get_weather(
+            lat=lat,
+            lng=lng,
+            forecast_days=days,
+            force_refresh=refresh
+        )
 
-            return {
-                "source": "Open-Meteo Free API (Live)",
-                "lat": lat,
-                "lng": lng,
-                "current": {
-                    "temperature_c": temp[0] if temp else 34.0,
-                    "rainfall_rate_mm_hr": rain[0] if rain else 12.5,
-                    "humidity_pct": humidity[0] if humidity else 65
-                },
-                "hourly": [
-                    {
-                        "time": t,
-                        "rain_mm": r,
-                        "temp_c": tp,
-                        "humidity_pct": h
-                    }
-                    for t, r, tp, h in zip(times, rain, temp, humidity)
-                ]
-            }
-    except Exception:
-        pass
+        # Maintain backward compatibility for existing callers expecting rainfall_rate_mm_hr
+        if "rainfall_rate_mm_hr" not in data["current"]:
+            data["current"]["rainfall_rate_mm_hr"] = data["current"].get("precipitation_mm", 0.0)
 
-    # High-fidelity offline fallback fixture (Calibrated for Hyderabad monsoon event)
-    times = [f"2026-10-25T{h:02d}:00" for h in range(18, 24)] + [f"2026-10-26T{h:02d}:00" for h in range(0, 18)]
-    simulated_rain = [45.0, 58.0, 52.0, 38.0, 24.0, 15.0, 8.0, 4.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 12.0, 22.0, 35.0]
-    simulated_temp = [33.0, 32.5, 31.0, 30.0, 29.5, 29.0, 28.5, 28.0, 29.0, 31.0, 33.5, 36.0, 38.2, 39.5, 40.0, 39.0, 37.5, 36.0, 35.0, 34.0, 33.5, 33.0, 32.5, 32.0]
-    simulated_humidity = [78, 85, 88, 86, 84, 82, 80, 78, 72, 65, 58, 52, 48, 45, 46, 50, 56, 62, 68, 72, 75, 78, 82, 85]
+        # Also maintain top-level lat / lng keys for existing integration tests
+        data["lat"] = lat
+        data["lng"] = lng
+        data["source"] = data["metadata"]["provider"]
 
+        return data
+
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(ve)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Weather service error: {str(exc)}"
+        )
+
+@router.get("/search")
+def search_locations(
+    q: str = Query(..., min_length=2, description="City, locality, or town name to search"),
+    count: int = Query(5, ge=1, le=10, description="Maximum number of candidate matches")
+):
+    """
+    Geocodes a search string using the official Open-Meteo Geocoding API.
+    Resolves city name to precise latitude, longitude, country, and admin region.
+    """
+    results = weather_service.search_cities(query=q, count=count)
     return {
-        "source": "Nirvana Calibrated Meteorological Fixture (Offline Fallback)",
-        "lat": lat,
-        "lng": lng,
-        "current": {
-            "temperature_c": simulated_temp[0],
-            "rainfall_rate_mm_hr": simulated_rain[0],
-            "humidity_pct": simulated_humidity[0]
-        },
-        "hourly": [
-            {
-                "time": t,
-                "rain_mm": r,
-                "temp_c": tp,
-                "humidity_pct": h
-            }
-            for t, r, tp, h in zip(times, simulated_rain, simulated_temp, simulated_humidity)
-        ]
+        "query": q,
+        "count": len(results),
+        "results": results
     }
