@@ -136,3 +136,75 @@ export interface MunicipalKPIs {
   alerts_dispatched_today: number;
   last_updated: string;
 }
+
+export interface CurrentWeather {
+  time: string;
+  temperature_c: number;
+  apparent_temperature_c: number;
+  humidity_pct: number;
+  precipitation_mm: number;
+  rain_mm: number;
+  showers_mm: number;
+  weather_code: number;
+  weather_description: string;
+  weather_category: string;
+  weather_icon: string;
+  is_day: boolean;
+  wind_speed_kmh: number;
+  wind_direction_deg: number;
+  wind_direction_cardinal: string;
+  surface_pressure_hpa?: number;
+  rainfall_rate_mm_hr?: number;
+}
+
+export interface HourlyForecastItem {
+  time: string;
+  temperature_c: number;
+  apparent_temperature_c: number;
+  humidity_pct: number;
+  precipitation_probability_pct: number;
+  rain_mm: number;
+  weather_code: number;
+  weather_description: string;
+  weather_icon: string;
+  wind_speed_kmh: number;
+}
+
+export interface DailyForecastItem {
+  date: string;
+  weather_code: number;
+  weather_description: string;
+  weather_icon: string;
+  temp_max_c: number;
+  temp_min_c: number;
+  apparent_temp_max_c: number;
+  apparent_temp_min_c: number;
+  precipitation_sum_mm: number;
+  precipitation_probability_max_pct: number;
+  wind_speed_max_kmh: number;
+  sunrise?: string;
+  sunset?: string;
+  uv_index_max?: number;
+}
+
+export interface WeatherData {
+  location: {
+    lat: number;
+    lng: number;
+    timezone: string;
+    timezone_abbreviation?: string;
+    elevation_m?: number;
+  };
+  current: CurrentWeather;
+  hourly: HourlyForecastItem[];
+  daily: DailyForecastItem[];
+  metadata: {
+    provider: string;
+    model_attribution: string;
+    fetched_at: string;
+    cached: boolean;
+    cache_expires_in_seconds?: number;
+    is_stale: boolean;
+    warning?: string;
+  };
+}

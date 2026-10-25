@@ -99,6 +99,23 @@ npm run dev
 
 ---
 
+## 🧪 Test Suite & Verification
+
+The platform includes comprehensive test suites across backend engines and frontend compilation:
+
+```bash
+# 1. Run full backend test suites (Authentication, Weather, Location Detection, Dynamic Sensitivity)
+python tests/test_auth_system.py
+python tests/test_weather_integration.py
+python tests/test_location_detection.py
+python tests/test_dynamic_engine.py
+
+# 2. Run Next.js production build verification
+npm --prefix web run build
+```
+
+---
+
 ## 🎨 UI Implementation: The Nirvana Design System
 Nirvana strictly follows the Google Stitch design guidelines:
 - **Canvas Theme:** Warm, light cream/white background (`#FBF7EF` and `#FFFFFF`), strictly avoiding dark themes to promote calm, clear civic reading under direct daylight.
@@ -108,10 +125,16 @@ Nirvana strictly follows the Google Stitch design guidelines:
   - Civic teal: `#1F7A8C`
   - Saffron warmth: `#F28C28`
   - Semantic Risk Palette: Low (`#4CAF7A`), Moderate (`#F2B134`), High (`#EE7B30`), Severe (`#D9453D`)
+- **Key Modules:**
+  - **Real Geographic Map:** Interactive MapLibre GL basemap with CartoDB Voyager, Positron, and OpenStreetMap tiles.
+  - **Civic Trust Bar:** Freshness dot, confidence chip with popover, official IMD/NDMA statutory note with methodology modal.
+  - **Live Weather Curve:** 24-hour temperature and rainfall SVG area chart powered by Open-Meteo.
+  - **Mobile SOS Sheet:** 1-tap dialer for 112, 108 ambulance, GHMC control room, live GPS location sharing, and nearest shelter navigation.
+  - **Offline Banner:** Real-time network listener showing cached telemetry during network outages.
 - **Typography:**
   - Headings: **Plus Jakarta Sans**
   - Body & Metrics: **Inter**
-  - Regional Non-Latin Scripts: **Noto Sans** with expanded line-height (`28px` on `16px` font) to avoid clipping stacked diacritics.
+  - Regional Non-Latin Scripts: **Noto Sans** with expanded line-height (`28px` on `16px` font) to avoid clipping stacked diacritics across all 9 supported Indian languages.
 
 ---
 

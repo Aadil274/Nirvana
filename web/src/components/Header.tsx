@@ -1,9 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { SupportedLanguage } from '../types';
 import { LANGUAGES, getTranslation } from '../lib/i18n';
-import { Shield, Sparkles, Volume2, Globe, UserCheck, LayoutDashboard, Eye, Activity } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
+import {
+  Shield,
+  Sparkles,
+  Volume2,
+  Globe,
+  UserCheck,
+  LayoutDashboard,
+  Eye,
+  Activity,
+  User,
+  LogOut,
+  ChevronDown
+} from 'lucide-react';
 
 interface HeaderProps {
   currentLang: SupportedLanguage;
@@ -27,6 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
   onStaffLoginClick
 }) => {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 pointer-events-auto">
@@ -167,6 +183,59 @@ export const Header: React.FC<HeaderProps> = ({
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span>{isCommandView ? getTranslation(currentLang, 'header_citizen_view') : getTranslation(currentLang, 'header_command_view')}</span>
             </button>
+
+            {/* Authentication Action Pill */}
+            {isAuthenticated && user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E3F1F4] hover:bg-[#d5edf2] text-[#006070] text-xs font-semibold border border-[#1F7A8C]/30 transition-all cursor-pointer shadow-sm"
+                >
+                  <div className="w-5 h-5 rounded-full bg-[#1F7A8C] text-white flex items-center justify-center text-[10px] font-bold">
+                    {user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <span className="hidden sm:inline max-w-[90px] truncate">{user.full_name ? user.full_name.split(' ')[0] : 'User'}</span>
+                  <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-level3 border border-[#EADBCA] py-2 z-50 animate-fade-in text-xs">
+                    <div className="px-4 py-2 border-b border-[#EADBCA]">
+                      <span className="font-bold text-[#1c1b1a] block truncate">{user.full_name}</span>
+                      <span className="text-[11px] text-[#6F6A60] block truncate">{user.email}</span>
+                      <span className="mt-1 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#E6F5ED] text-[#4CAF7A]">
+                        {user.role === 'admin' ? 'Municipal Officer' : 'Verified Citizen'}
+                      </span>
+                    </div>
+                    <div className="py-1">
+                      <div className="px-4 py-1.5 text-[11px] text-[#6F6A60]">
+                        Monitored: <strong className="text-[#1c1b1a]">{user.ward_id || 'ward-72'}</strong>
+                      </div>
+                    </div>
+                    <div className="pt-1 border-t border-[#EADBCA]">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-[#D9453D] hover:bg-[#FBE1DF] font-semibold flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/signin"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFFFFF] hover:bg-[#F3EBDD] text-[#1c1b1a] text-xs font-semibold border border-[#EADBCA] shadow-sm transition-all"
+              >
+                <User className="w-3.5 h-3.5 text-[#1F7A8C]" />
+                <span className="hidden sm:inline">Sign In</span>
+              </Link>
+            )}
 
             {/* Primary Action Button */}
             <button

@@ -30,6 +30,76 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const [phone, setPhone] = useState('9876543210');
   const [otpSent, setOtpSent] = useState(false);
   const [otpVal, setOtpVal] = useState('421072');
+  const [isDetectingGps, setIsDetectingGps] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
+  const WARD_CENTROIDS: Record<string, [number, number]> = {
+    'ward-72': [17.3820, 78.4230],
+    'ward-71': [17.4014, 78.4118],
+    'ward-48': [17.3616, 78.4747],
+    'ward-55': [17.3730, 78.5095],
+    'ward-8': [17.4440, 78.4680],
+    'ward-62': [17.3980, 78.5150],
+    'ward-44': [17.3200, 78.4800],
+    'ward-10': [17.4050, 78.5580],
+    'ward-91': [17.4120, 78.4600],
+  };
+
+  const handleGpsDetection = () => {
+    if (typeof window === 'undefined' || !navigator || !('geolocation' in navigator)) {
+      setGpsError('Browser geolocation is not supported on this device.');
+      return;
+    }
+
+    setIsDetectingGps(true);
+    setGpsError(null);
+
+    const onPosSuccess = (pos: GeolocationPosition) => {
+      setIsDetectingGps(false);
+      setGpsError(null);
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      let nearestWardId = 'ward-72';
+      let minDistance = Infinity;
+
+      for (const [wid, [wLat, wLng]] of Object.entries(WARD_CENTROIDS)) {
+        const d = Math.sqrt(((lat - wLat) * 111.0) ** 2 + ((lng - wLng) * 105.0) ** 2);
+        if (d < minDistance) {
+          minDistance = d;
+          nearestWardId = wid;
+        }
+      }
+
+      setSelectedWard(nearestWardId);
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      onPosSuccess,
+      (err1) => {
+        if (err1.code === 1) {
+          setIsDetectingGps(false);
+          setGpsError('Location permission denied. Please select your ward manually below.');
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          onPosSuccess,
+          (err2) => {
+            setIsDetectingGps(false);
+            if (err2.code === 1) {
+              setGpsError('Location permission denied. Please select your ward manually.');
+            } else if (err2.code === 3) {
+              setGpsError('Location timed out. Please retry or select your ward from the list.');
+            } else {
+              setGpsError('Could not determine position. Please select your ward manually.');
+            }
+          },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
 
   if (!isOpen) return null;
 
@@ -107,27 +177,19 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             {/* GPS Detection Button in Onboarding */}
             <button
               type="button"
-              onClick={() => {
-                if ('geolocation' in navigator) {
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      const lat = pos.coords.latitude;
-                      const lng = pos.coords.longitude;
-                      // Default closest ward mapping
-                      setSelectedWard(lat < 17.37 ? 'ward-48' : lat > 17.42 ? 'ward-8' : 'ward-72');
-                      alert(`GPS Locked: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E. Closest neighborhood selected.`);
-                    },
-                    (err) => alert(`Could not access GPS: ${err.message}`)
-                  );
-                } else {
-                  alert('Geolocation not supported.');
-                }
-              }}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#F3EBDD] hover:bg-[#EADBCA] text-[#006070] text-xs font-bold flex items-center justify-center gap-2 border border-[#1F7A8C]/30 transition-all cursor-pointer"
+              onClick={handleGpsDetection}
+              disabled={isDetectingGps}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#F3EBDD] hover:bg-[#EADBCA] text-[#006070] text-xs font-bold flex items-center justify-center gap-2 border border-[#1F7A8C]/30 transition-all cursor-pointer disabled:opacity-60"
             >
-              <MapPin className="w-4 h-4 text-[#1F7A8C]" />
-              <span>Use My Live GPS Location</span>
+              <MapPin className={`w-4 h-4 text-[#1F7A8C] ${isDetectingGps ? 'animate-spin' : ''}`} />
+              <span>{isDetectingGps ? 'Detecting device GPS...' : 'Use My Live GPS Location'}</span>
             </button>
+
+            {gpsError && (
+              <p className="text-[11px] text-[#D9453D] bg-[#FBE1DF] p-2 rounded-lg border border-[#D9453D]/30">
+                {gpsError}
+              </p>
+            )}
 
             <div className="space-y-2 max-h-56 overflow-y-auto p-1">
               {wards.map(w => (

@@ -10,7 +10,8 @@ import {
   Shelter,
   CitizenReport,
   AlertItem,
-  MunicipalKPIs
+  MunicipalKPIs,
+  WeatherData
 } from '../types';
 import {
   HYDERABAD_WARDS,
@@ -20,18 +21,24 @@ import {
   INITIAL_KPIS
 } from '../lib/mock-data';
 import { LANGUAGES, getTranslation } from '../lib/i18n';
+import { fetchWeather } from '../lib/weather';
+import dynamic from 'next/dynamic';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { DualRiskGauge } from '../components/DualRiskGauge';
 import { RiskExplainer } from '../components/RiskExplainer';
 import { SafetyChecklist } from '../components/SafetyChecklist';
-import { MapComponent } from '../components/MapComponent';
 import { ShelterLocator } from '../components/ShelterLocator';
 import { CitizenReports } from '../components/CitizenReports';
 import { SimpleModeView } from '../components/SimpleModeView';
 import { MunicipalCommand } from '../components/MunicipalCommand';
 import { SimulationBar } from '../components/SimulationBar';
+import { WeatherWidget } from '../components/WeatherWidget';
 import { OnboardingModal } from '../components/OnboardingModal';
+import { TrustBar } from '../components/TrustBar';
+import { OfflineBanner } from '../components/OfflineBanner';
+import { MobileCitizenNav } from '../components/MobileCitizenNav';
+import { SosModal } from '../components/SosModal';
 
 import {
   Search,
@@ -40,8 +47,37 @@ import {
   Shield,
   Sparkles,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle,
+  RefreshCw,
+  Compass
 } from 'lucide-react';
+
+// Dynamic client-side import for MapComponent to guarantee real WebGL rendering in browser
+const MapComponent = dynamic(
+  () => import('../components/MapComponent').then((mod) => mod.MapComponent),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[520px] rounded-2xl bg-[#FBF7EF] border border-[#EADBCA] flex flex-col items-center justify-center p-8 text-center animate-pulse">
+        <div className="w-12 h-12 rounded-full bg-[#E3F1F4] flex items-center justify-center text-[#1F7A8C] mb-3">
+          <Compass className="w-6 h-6 animate-spin text-[#006070]" />
+        </div>
+        <h4 className="font-heading font-bold text-sm text-[#1c1b1a] mb-1">
+          Initializing Real Geographic Map...
+        </h4>
+        <span className="text-xs text-[#6F6A60]">
+          Loading streets, waterways, drainage topology, and verified safe havens
+        </span>
+      </div>
+    )
+  }
+);
+
+interface LocationErrorState {
+  type: 'denied' | 'unavailable' | 'timeout' | 'unsupported' | 'insecure';
+  message: string;
+}
 
 export default function Home() {
   // Application State
@@ -49,6 +85,7 @@ export default function Home() {
   const [isSimpleMode, setIsSimpleMode] = useState(false);
   const [isCommandView, setIsCommandView] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [sosModalOpen, setSosModalOpen] = useState(false);
   const [persona, setPersona] = useState<UserPersona>('low_lying');
   const [horizon, setHorizon] = useState<Horizon>('now');
   const [simulatedTimeStep, setSimulatedTimeStep] = useState(0);
@@ -58,9 +95,15 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userGpsCoords, setUserGpsCoords] = useState<{ lat: number; lng: number; accuracy: number; label: string } | null>(null);
   const [isLocatingGps, setIsLocatingGps] = useState(false);
-  const [rainfallRate, setRainfallRate] = useState<number>(45);
-  const [temperatureC, setTemperatureC] = useState<number>(34);
+  const [locationError, setLocationError] = useState<LocationErrorState | null>(null);
+  const [rainfallRate, setRainfallRate] = useState<number>(0);
+  const [temperatureC, setTemperatureC] = useState<number>(28);
   const [isScenarioActive, setIsScenarioActive] = useState(false);
+
+  // Live Weather Intelligence State (Open-Meteo Provider)
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
 
   // Data Stores
   const [wardsData, setWardsData] = useState<WardFeature[]>(HYDERABAD_WARDS.features);
@@ -85,17 +128,82 @@ export default function Home() {
   const activeWardLng = wardCoords.reduce((acc, c) => acc + c[0], 0) / wardCoords.length;
   const activeWardLat = wardCoords.reduce((acc, c) => acc + c[1], 0) / wardCoords.length;
 
-  // Dynamically calculate real distance & walking time from active ward to every shelter
+  // Target coordinates: user detected GPS prioritized, fallback to selected ward centroid
+  const targetLat = userGpsCoords ? userGpsCoords.lat : activeWardLat;
+  const targetLng = userGpsCoords ? userGpsCoords.lng : activeWardLng;
+  const targetLocationLabel = userGpsCoords ? userGpsCoords.label : activeProps.name;
+
+  // Dynamically calculate real distance & walking time from user GPS (or active ward) to every shelter
   const dynamicShelters = useMemo(() => {
+    const originLat = userGpsCoords ? userGpsCoords.lat : activeWardLat;
+    const originLng = userGpsCoords ? userGpsCoords.lng : activeWardLng;
     return shelters.map(s => {
-      const dist = calculateDistanceKm(activeWardLat, activeWardLng, s.lat, s.lng);
+      const dist = calculateDistanceKm(originLat, originLng, s.lat, s.lng);
       return {
         ...s,
         distance_km: dist,
         walking_mins: Math.max(2, Math.round(dist * 12))
       };
     }).sort((a, b) => a.distance_km - b.distance_km);
-  }, [shelters, activeWardLat, activeWardLng]);
+  }, [shelters, activeWardLat, activeWardLng, userGpsCoords]);
+
+  // Synchronize Live Weather from Open-Meteo API
+  const refreshWeather = async (force: boolean = false) => {
+    setIsWeatherLoading(true);
+    setWeatherError(null);
+    try {
+      const data = await fetchWeather(targetLat, targetLng, force);
+      setWeatherData(data);
+      setIsWeatherLoading(false);
+      if (!isScenarioActive) {
+        if (typeof data.current.temperature_c === 'number') {
+          setTemperatureC(Math.round(data.current.temperature_c));
+        }
+        if (typeof data.current.precipitation_mm === 'number') {
+          setRainfallRate(Math.round(data.current.precipitation_mm));
+        }
+      }
+    } catch (e: any) {
+      setIsWeatherLoading(false);
+      setWeatherError('Unable to retrieve real-time weather from Open-Meteo. Please check connection and click Refresh.');
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const loadWeatherEffect = async () => {
+      setIsWeatherLoading(true);
+      setWeatherError(null);
+      try {
+        const data = await fetchWeather(targetLat, targetLng, false, controller.signal);
+        if (isMounted) {
+          setWeatherData(data);
+          setIsWeatherLoading(false);
+          if (!isScenarioActive) {
+            if (typeof data.current.temperature_c === 'number') {
+              setTemperatureC(Math.round(data.current.temperature_c));
+            }
+            if (typeof data.current.precipitation_mm === 'number') {
+              setRainfallRate(Math.round(data.current.precipitation_mm));
+            }
+          }
+        }
+      } catch (err: any) {
+        if (isMounted && err.name !== 'AbortError') {
+          setIsWeatherLoading(false);
+          setWeatherError('Unable to retrieve real-time weather from Open-Meteo. Please check connection and click Refresh.');
+        }
+      }
+    };
+
+    loadWeatherEffect();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [targetLat, targetLng]);
 
   // Live synchronization with FastAPI backend if running
   useEffect(() => {
@@ -189,8 +297,13 @@ export default function Home() {
 
   const handleResetScenario = () => {
     setIsScenarioActive(false);
-    setRainfallRate(45);
-    setTemperatureC(34);
+    if (weatherData) {
+      setRainfallRate(Math.round(weatherData.current.precipitation_mm || 0));
+      setTemperatureC(Math.round(weatherData.current.temperature_c || 28));
+    } else {
+      setRainfallRate(0);
+      setTemperatureC(28);
+    }
     setSimulatedTimeStep(0);
     setSelectedWardId('ward-72');
     setAlerts(INITIAL_ALERTS);
@@ -198,6 +311,8 @@ export default function Home() {
   };
 
   const handleAddReport = (newRep: Partial<CitizenReport>) => {
+    const reportLat = userGpsCoords ? userGpsCoords.lat : (activeWard.geometry?.coordinates?.[0]?.[0]?.[1] || 17.3820);
+    const reportLng = userGpsCoords ? userGpsCoords.lng : (activeWard.geometry?.coordinates?.[0]?.[0]?.[0] || 78.4230);
     const reportObj: CitizenReport = {
       id: `rep-${Date.now()}`,
       ward_id: activeProps.ward_id,
@@ -205,9 +320,9 @@ export default function Home() {
       category: (newRep.category as any) || 'waterlogging',
       severity: newRep.severity || 'Severe',
       description: newRep.description || 'Water accumulation observed.',
-      location_name: newRep.location_name || `${activeProps.name} Point`,
-      lat: activeWard.geometry?.coordinates?.[0]?.[0]?.[1] || 17.3820,
-      lng: activeWard.geometry?.coordinates?.[0]?.[0]?.[0] || 78.4230,
+      location_name: newRep.location_name || (userGpsCoords ? `Live GPS (${reportLat.toFixed(3)}°, ${reportLng.toFixed(3)}°)` : `${activeProps.name} Point`),
+      lat: reportLat,
+      lng: reportLng,
       photo_url: newRep.photo_url,
       has_audio_note: newRep.has_audio_note || false,
       timestamp: 'Just now',
@@ -241,60 +356,120 @@ export default function Home() {
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Real Dynamic Browser Geolocation (GPS)
+  // Real Dynamic Browser Geolocation (GPS) with Two-Stage Fallback
   const handleUseRealGps = () => {
-    if (!('geolocation' in navigator)) {
-      alert('Geolocation is not supported in your browser.');
+    if (typeof window === 'undefined' || !navigator || !('geolocation' in navigator)) {
+      setLocationError({
+        type: 'unsupported',
+        message: 'Browser Geolocation is not supported in this environment. Please search for your locality or ward manually.'
+      });
+      return;
+    }
+
+    if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      setLocationError({
+        type: 'insecure',
+        message: 'Browser Geolocation requires a secure HTTPS connection. Please access Nirvana via HTTPS or enter your locality in the search bar.'
+      });
       return;
     }
 
     setIsLocatingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        setIsLocatingGps(false);
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const accuracy = Math.round(pos.coords.accuracy);
+    setLocationError(null);
 
-        // Find nearest ward among all wards in Hyderabad
-        let nearestWard = wardsData[0];
-        let minDistance = Infinity;
+    const onPositionSuccess = async (pos: GeolocationPosition) => {
+      setIsLocatingGps(false);
+      setLocationError(null);
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = Math.round(pos.coords.accuracy || 0);
 
-        wardsData.forEach(w => {
-          const coords = w.geometry?.coordinates?.[0] || [[78.42, 17.38]];
-          const cLng = coords.reduce((acc, p) => acc + p[0], 0) / coords.length;
-          const cLat = coords.reduce((acc, p) => acc + p[1], 0) / coords.length;
-          const d = Math.sqrt(((lat - cLat) * 111.0) ** 2 + ((lng - cLng) * 105.0) ** 2);
-          if (d < minDistance) {
-            minDistance = d;
-            nearestWard = w;
-          }
+      // Validate latitude and longitude bounds
+      if (typeof lat !== 'number' || isNaN(lat) || lat < -90 || lat > 90 ||
+          typeof lng !== 'number' || isNaN(lng) || lng < -180 || lng > 180) {
+        setLocationError({
+          type: 'unavailable',
+          message: 'Received invalid coordinates from the device. Please try again or select your ward manually.'
         });
+        return;
+      }
 
-        setSelectedWardId(nearestWard.properties.ward_id);
-        const gpsLabel = `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (±${accuracy}m)`;
-        setUserGpsCoords({ lat, lng, accuracy, label: gpsLabel });
-        setSearchQuery(`${nearestWard.properties.name} [GPS: ${lat.toFixed(3)}°, ${lng.toFixed(3)}°]`);
+      // Map to closest ward in Hyderabad pilot database
+      let nearestWard = wardsData[0];
+      let minDistance = Infinity;
 
-        // Query backend API for live coordinate-specific risk calculation
-        try {
-          const res = await fetch(`http://127.0.0.1:8000/api/v1/risk?lat=${lat}&lng=${lng}`);
-          if (res.ok) {
-            const liveData = await res.json();
-            console.log('Live coordinate risk:', liveData);
-          }
-        } catch (e) {
-          // offline mode
+      wardsData.forEach(w => {
+        const coords = w.geometry?.coordinates?.[0] || [[78.42, 17.38]];
+        const cLng = coords.reduce((acc, p) => acc + p[0], 0) / coords.length;
+        const cLat = coords.reduce((acc, p) => acc + p[1], 0) / coords.length;
+        const d = Math.sqrt(((lat - cLat) * 111.0) ** 2 + ((lng - cLng) * 105.0) ** 2);
+        if (d < minDistance) {
+          minDistance = d;
+          nearestWard = w;
+        }
+      });
+
+      setSelectedWardId(nearestWard.properties.ward_id);
+      const gpsLabel = `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (±${accuracy}m)`;
+      setUserGpsCoords({ lat, lng, accuracy, label: gpsLabel });
+      setSearchQuery(`${nearestWard.properties.name} [GPS: ${lat.toFixed(3)}°, ${lng.toFixed(3)}°]`);
+
+      // Query backend FastAPI dynamically for real coordinates
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/api/v1/risk?lat=${lat}&lng=${lng}`);
+        if (res.ok) {
+          const liveData = await res.json();
+          console.log('Live dynamic risk computed for coordinates:', liveData);
+        }
+      } catch (e) {
+        // Offline / client-side mode
+      }
+
+      const el = document.getElementById('monitor-section');
+      el?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Stage 1: Try high accuracy (GPS sensor)
+    navigator.geolocation.getCurrentPosition(
+      onPositionSuccess,
+      (err1) => {
+        // If permission explicitly denied by user, do not retry; show informative guidance immediately
+        if (err1.code === 1) { // PERMISSION_DENIED
+          setIsLocatingGps(false);
+          setLocationError({
+            type: 'denied',
+            message: 'Location access was denied. Please allow location permissions in your browser address bar/settings, or search for your locality below.'
+          });
+          return;
         }
 
-        const el = document.getElementById('monitor-section');
-        el?.scrollIntoView({ behavior: 'smooth' });
+        // On laptops/desktops without GPS chips, high accuracy times out or is unavailable.
+        // Stage 2: Fall back to standard accuracy (Wi-Fi triangulation / network location)
+        navigator.geolocation.getCurrentPosition(
+          onPositionSuccess,
+          (err2) => {
+            setIsLocatingGps(false);
+            if (err2.code === 1) {
+              setLocationError({
+                type: 'denied',
+                message: 'Location permission was denied. Please enable location permissions or search for your locality manually.'
+              });
+            } else if (err2.code === 3) {
+              setLocationError({
+                type: 'timeout',
+                message: 'Location acquisition timed out. Please check your network connection and click "Retry Detection", or type your locality below.'
+              });
+            } else {
+              setLocationError({
+                type: 'unavailable',
+                message: 'Physical position is currently unavailable from your device. Please search for your locality or select a ward from the list.'
+              });
+            }
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
       },
-      (err) => {
-        setIsLocatingGps(false);
-        alert(`Location access denied or timed out: ${err.message}. Please allow location access or type your locality in the search bar.`);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
     );
   };
 
@@ -441,6 +616,9 @@ export default function Home() {
 
   return (
     <div className="w-full bg-[#FBF7EF] min-h-screen relative font-body text-[#2B2A28]">
+      {/* 0. OFFLINE STATUS BANNER */}
+      <OfflineBanner lastUpdatedText="8 mins ago" />
+
       {/* 1. GLOBAL HEADER */}
       <Header
         currentLang={currentLang}
@@ -473,36 +651,14 @@ export default function Home() {
         /* 3. CITIZEN RESILIENCE WEB APP */
         <main className="w-full pt-28">
           {/* 3.1 GLOBAL CIVIC TRUST BAR */}
-          <section className="w-full bg-white/95 backdrop-blur-md border-b border-[#EADBCA] shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F5ED] text-[#1c1b1a]">
-                  <span className="w-2 h-2 rounded-full bg-[#4CAF7A] animate-ping"></span>
-                  <span className="font-semibold text-[#006070]">{getTranslation(currentLang, 'updated_ago')}</span>
-                </div>
-                <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#E3F1F4] text-[#006070] font-medium">
-                  <CheckCircle className="w-3.5 h-3.5 text-[#1F7A8C]" />
-                  <span>{getTranslation(currentLang, 'high_confidence')}</span>
-                </div>
-                <span className="hidden xl:inline text-[#6F6A60]">
-                  {getTranslation(currentLang, 'advisory_disclaimer')}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleListenHero}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F3EBDD] hover:bg-[#FDEBD3] text-[#1c1b1a] font-semibold transition-all shadow-sm cursor-pointer"
-                >
-                  <Volume2 className="w-4 h-4 text-[#006070]" />
-                  <span>{getTranslation(currentLang, 'listen_btn')}</span>
-                </button>
-                <div className="hidden md:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#E6F5ED] text-[#4CAF7A] font-semibold">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{getTranslation(currentLang, 'offline_ready')}</span>
-                </div>
-              </div>
-            </div>
+          <section className="w-full max-w-7xl mx-auto px-4 lg:px-8 pt-4 pb-2">
+            <TrustBar
+              currentLang={currentLang}
+              confidenceScore={activeProps.confidence || 94}
+              minutesAgo={6}
+              onListen={handleListenHero}
+              showSyntheticDisclaimer={true}
+            />
           </section>
 
           {/* 3.2 HERO SECTION */}
@@ -527,6 +683,45 @@ export default function Home() {
               <p className="text-sm sm:text-base text-[#6F6A60] max-w-3xl mb-8 leading-relaxed">
                 {getTranslation(currentLang, 'hero_sub')}
               </p>
+
+              {/* Geolocation Failure / User-Friendly Error Banner */}
+              {locationError && (
+                <div className="w-full max-w-2xl bg-[#FBE1DF] border border-[#D9453D]/40 rounded-2xl p-4 mb-4 text-left flex items-start gap-3 shadow-sm animate-fade-in">
+                  <AlertTriangle className="w-5 h-5 text-[#D9453D] shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#D9453D]">
+                        {locationError.type === 'denied' ? 'Location Permission Denied' :
+                         locationError.type === 'timeout' ? 'Location Request Timed Out' :
+                         locationError.type === 'insecure' ? 'Insecure Context' : 'Location Unavailable'}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setLocationError(null)}
+                        className="text-xs text-[#6F6A60] hover:text-[#1c1b1a] px-1.5 py-0.5 rounded cursor-pointer"
+                        title="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <p className="text-xs text-[#1c1b1a] mt-1 mb-2">
+                      {locationError.message}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleUseRealGps}
+                        disabled={isLocatingGps}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D9453D] hover:bg-[#b8322b] text-white text-xs font-semibold cursor-pointer transition-colors"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isLocatingGps ? 'animate-spin' : ''}`} />
+                        <span>Retry Detection</span>
+                      </button>
+                      <span className="text-[11px] text-[#6F6A60]">or search your locality in the box below</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* DYNAMIC SEARCH BOX & REAL GPS */}
               <div className="w-full max-w-2xl bg-white rounded-full p-2 pl-5 flex items-center shadow-level2 border border-[#EADBCA] mb-3">
@@ -622,6 +817,16 @@ export default function Home() {
           {/* 3.3 ACTIVE STREET TELEMETRY & GAUGES */}
           <section className="max-w-7xl mx-auto px-4 lg:px-8 py-10" id="monitor-section">
             
+            {/* LIVE WEATHER INTELLIGENCE WIDGET */}
+            <WeatherWidget
+              weather={weatherData}
+              locationName={targetLocationLabel}
+              isLoading={isWeatherLoading}
+              error={weatherError}
+              onRefresh={() => refreshWeather(true)}
+              currentLang={currentLang}
+            />
+
             {/* SIMULATION BAR */}
             <SimulationBar
               rainfallRate={rainfallRate}
@@ -700,11 +905,7 @@ export default function Home() {
                 persona={persona}
                 onPersonaChange={setPersona}
                 onSafeClick={() => alert(currentLang === 'te' ? 'మీరు సురక్షితంగా ఉన్నారని వార్డ్ అధికారికి మరియు కుటుంబానికి సమాచారం చేరవేయబడింది.' : 'Welfare status updated: "I Am Safe" registered with GHMC Emergency Operations.')}
-                onSosClick={() => {
-                  if (confirm(currentLang === 'te' ? 'తక్షణ సహాయం కొరకు 112 కు కాల్ చేయాలా?' : 'SOS ALERT: Direct emergency beacon will be sent to SDRF First Responders. Proceed to call 112?')) {
-                    window.location.href = 'tel:112';
-                  }
-                }}
+                onSosClick={() => setSosModalOpen(true)}
                 currentLang={currentLang}
               />
             </div>
@@ -721,6 +922,7 @@ export default function Home() {
                 simulatedTimeStep={simulatedTimeStep}
                 onTimeStepChange={setSimulatedTimeStep}
                 currentLang={currentLang}
+                userLocation={userGpsCoords}
               />
             </div>
 
@@ -796,6 +998,34 @@ export default function Home() {
           alert(data.language === 'te' ? `ప్రాధాన్యతలు భద్రపరచబడ్డాయి! ${data.wardId} కొరకు తెలుగులో హెచ్చరికలు నమోదయ్యాయి.` : `Preferences saved! Alerts registered for ${data.wardId} in ${data.language}.`);
         }}
         wards={wardOptions}
+      />
+
+      {/* 6. MOBILE CITIZEN FLOATING NAV */}
+      <MobileCitizenNav
+        currentLang={currentLang}
+        onOpenSos={() => setSosModalOpen(true)}
+        onOpenProfile={() => setOnboardingOpen(true)}
+      />
+
+      {/* 7. SOS EMERGENCY MODAL */}
+      <SosModal
+        isOpen={sosModalOpen}
+        onClose={() => setSosModalOpen(false)}
+        currentLang={currentLang}
+        nearestShelter={dynamicShelters[0] || null}
+        userCoords={userGpsCoords}
+        wardName={activeProps.name}
+        onNavigateShelters={() => {
+          const el = document.getElementById('verified-shelters');
+          el?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onRequestHelp={() => {
+          handleAddReport({
+            category: 'waterlogging',
+            severity: 'Severe',
+            description: 'SOS BEACON: Urgent assistance requested for resident in flooded sector.'
+          });
+        }}
       />
     </div>
   );

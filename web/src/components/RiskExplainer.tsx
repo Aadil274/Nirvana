@@ -3,7 +3,7 @@
 import React from 'react';
 import { SupportedLanguage } from '../types';
 import { getTranslation, getLocalizedFactors } from '../lib/i18n';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, BrainCircuit, Sparkles } from 'lucide-react';
 
 interface RiskExplainerProps {
   factors: string[];
@@ -97,17 +97,17 @@ export const RiskExplainer: React.FC<RiskExplainerProps> = ({
   const localizedFactors = getLocalizedFactors(currentLang, activeFactors);
 
   return (
-    <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1">
+    <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1 tactile-card-static" id="explainability-section">
       <div className="flex items-center gap-2 mb-2">
-        <span className="material-symbols-outlined text-[#006070] text-[22px]">psychology</span>
-        <span className="text-[11px] font-bold uppercase tracking-wider text-[#006070]">
+        <BrainCircuit className="w-5 h-5 text-[#1F7A8C]" />
+        <span className="text-[11px] font-bold uppercase tracking-wider text-[#1F7A8C]">
           {getTranslation(currentLang, 'explainability_tag')}
         </span>
       </div>
-      <h3 className="font-heading text-xl font-bold text-[#1c1b1a] mb-2">
+      <h3 className="font-heading text-xl lg:text-2xl font-bold text-[#1c1b1a] mb-2">
         {getTranslation(currentLang, 'why_risk_elevated')} {wardName}?
       </h3>
-      <p className="text-sm text-[#6F6A60] mb-6">
+      <p className="text-xs sm:text-sm text-[#6F6A60] mb-6 leading-relaxed">
         {getTranslation(currentLang, 'explainability_desc')}
       </p>
 
@@ -128,21 +128,22 @@ export const RiskExplainer: React.FC<RiskExplainerProps> = ({
 
       {/* SHAP CONTRIBUTION BARS */}
       <div className="space-y-4">
-        <div className="text-xs font-bold uppercase text-[#6F6A60] tracking-wider mb-2">
-          {getTranslation(currentLang, 'feature_importance_breakdown')}
+        <div className="text-xs font-bold uppercase text-[#6F6A60] tracking-wider mb-2 flex items-center justify-between">
+          <span>{getTranslation(currentLang, 'feature_importance_breakdown')}</span>
+          <span className="text-[10px] text-[#1F7A8C] font-semibold">Mathematical Weight</span>
         </div>
         {dynamicShapContributions.map((item, index) => (
-          <div key={index} className="space-y-1">
+          <div key={index} className="space-y-1.5 p-2 rounded-xl hover:bg-[#FBF7EF] transition-colors">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-[#1c1b1a]">
+              <span className="font-semibold text-[#1c1b1a]">
                 {getTranslation(currentLang, item.labelKey)}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-[#6F6A60] text-[11px]">{item.value}</span>
+                <span className="text-[#6F6A60] text-[11px] bg-white px-2 py-0.5 rounded border border-[#EADBCA]">{item.value}</span>
                 <span className="font-bold text-[#006070] w-12 text-right">{item.score}%</span>
               </div>
             </div>
-            <div className="w-full h-2 rounded-full bg-[#F3EBDD] overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-[#EADBCA] overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${item.score}%`, backgroundColor: item.color }}
@@ -152,12 +153,12 @@ export const RiskExplainer: React.FC<RiskExplainerProps> = ({
         ))}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-[#EADBCA] flex items-center justify-between text-xs text-[#6F6A60]">
+      <div className="mt-6 pt-4 border-t border-[#EADBCA] flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-[#6F6A60] gap-2">
         <span className="flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-[#1F7A8C]" />
           {getTranslation(currentLang, 'model_calibrated_note')}
         </span>
-        <span className="font-semibold text-[#006070]">
+        <span className="font-semibold text-[#006070] bg-[#E3F1F4] px-2.5 py-0.5 rounded-full">
           {getTranslation(currentLang, 'brier_score_label')}
         </span>
       </div>

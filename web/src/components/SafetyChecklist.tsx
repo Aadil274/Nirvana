@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckSquare, Square, Volume2, ShieldCheck, PhoneCall } from 'lucide-react';
+import { CheckSquare, Square, Volume2, ShieldCheck, PhoneCall, CheckCircle, Sparkles } from 'lucide-react';
 import { UserPersona, SupportedLanguage } from '../types';
 import { getTranslation, getLocalizedChecklist } from '../lib/i18n';
 
@@ -26,6 +26,8 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
   const [speaking, setSpeaking] = useState(false);
 
   const items = getLocalizedChecklist(currentLang, persona);
+  const completedCount = Object.values(completed).filter(Boolean).length;
+  const progressPct = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
 
   const toggleCheck = (id: number) => {
     setCompleted(prev => ({ ...prev, [id]: !prev[id] }));
@@ -58,10 +60,11 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1">
+    <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1 tactile-card-static" id="safety-guides-section">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-[#EADBCA]">
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#EE7B30]">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#EE7B30] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />
             {getTranslation(currentLang, 'actionable_protocol_tag')}
           </span>
           <h3 className="font-heading text-xl lg:text-2xl font-bold text-[#1c1b1a]">
@@ -69,16 +72,25 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
           </h3>
         </div>
 
-        {/* Audio "Listen" Button */}
+        {/* Audio "Listen" Button with Animated Waveform */}
         <button
+          type="button"
           onClick={handleSpeech}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all border cursor-pointer ${
             speaking
-              ? 'bg-[#1F7A8C] text-white border-[#1F7A8C] shadow-sm animate-pulse'
+              ? 'bg-[#1F7A8C] text-white border-[#1F7A8C] shadow-sm'
               : 'bg-[#F3EBDD] text-[#1c1b1a] border-[#EADBCA] hover:bg-[#FDEBD3]'
           }`}
         >
-          <Volume2 className="w-4 h-4 text-[#006070]" />
+          {speaking ? (
+            <div className="flex items-center gap-1 h-3.5">
+              <span className="audio-bar" style={{ animationDelay: '0s', backgroundColor: '#FFFFFF' }} />
+              <span className="audio-bar" style={{ animationDelay: '0.2s', backgroundColor: '#FFFFFF' }} />
+              <span className="audio-bar" style={{ animationDelay: '0.4s', backgroundColor: '#FFFFFF' }} />
+            </div>
+          ) : (
+            <Volume2 className="w-4 h-4 text-[#006070]" />
+          )}
           <span>{speaking ? getTranslation(currentLang, 'stop_audio') : getTranslation(currentLang, 'listen_action_guide')}</span>
         </button>
       </div>
@@ -96,11 +108,12 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
             { id: 'general', labelKey: 'persona_general' }
           ].map(p => (
             <button
+              type="button"
               key={p.id}
               onClick={() => onPersonaChange(p.id as UserPersona)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer ${
                 persona === p.id
-                  ? 'bg-[#E3F1F4] text-[#006070] border-[#1F7A8C]'
+                  ? 'bg-[#E3F1F4] text-[#006070] border-[#1F7A8C] shadow-sm font-bold'
                   : 'bg-white text-[#6F6A60] border-[#EADBCA] hover:bg-[#F3EBDD]'
               }`}
             >
@@ -108,6 +121,52 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Circular Progress & Action Completion Banner */}
+      <div className="mb-5 p-3.5 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Circular SVG ring */}
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+              <path
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none"
+                stroke="#EADBCA"
+                strokeWidth="3.5"
+              />
+              <path
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none"
+                stroke="#4CAF7A"
+                strokeWidth="3.5"
+                strokeDasharray={`${progressPct}, 100`}
+                className="transition-all duration-500 ease-out"
+              />
+            </svg>
+            <span className="absolute text-[10px] font-bold text-[#1c1b1a]">
+              {progressPct}%
+            </span>
+          </div>
+
+          <div>
+            <span className="text-xs font-bold text-[#1c1b1a] block">
+              {completedCount} of {items.length} Actions Completed
+            </span>
+            <span className="text-[11px] text-[#6F6A60]">
+              {completedCount === items.length
+                ? 'All contingency precautions verified!'
+                : 'Follow each protocol step to minimize personal risk.'}
+            </span>
+          </div>
+        </div>
+
+        {completedCount === items.length && (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#E6F5ED] text-[#4CAF7A] border border-[#4CAF7A]/30 flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" />
+            Ready
+          </span>
+        )}
       </div>
 
       {/* Interactive Checkbox Items */}
@@ -118,10 +177,10 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
             <div
               key={item.id}
               onClick={() => toggleCheck(item.id)}
-              className={`flex items-start gap-3 p-4 rounded-2xl cursor-pointer transition-all border ${
+              className={`flex items-start gap-3.5 p-4 rounded-2xl cursor-pointer transition-all border ${
                 isDone
                   ? 'bg-[#E6F5ED] border-[#4CAF7A]/40 text-[#4CAF7A]'
-                  : 'bg-[#fdf9f5] border-[#EADBCA] hover:bg-[#F3EBDD]/50 text-[#1c1b1a]'
+                  : 'bg-[#fdf9f5] border-[#EADBCA] hover:bg-white hover:shadow-sm text-[#1c1b1a]'
               }`}
             >
               <div className="mt-0.5 shrink-0">
@@ -143,8 +202,9 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
       <div className="pt-6 border-t border-[#EADBCA] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={onSafeClick}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E6F5ED] text-[#4CAF7A] hover:bg-[#4CAF7A] hover:text-white text-xs font-bold transition-all border border-[#4CAF7A]/30 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E6F5ED] text-[#4CAF7A] hover:bg-[#4CAF7A] hover:text-white text-xs font-bold transition-all border border-[#4CAF7A]/30 cursor-pointer shadow-sm"
           >
             <ShieldCheck className="w-4 h-4" />
             <span>{getTranslation(currentLang, 'im_safe_btn')}</span>
@@ -155,8 +215,9 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={onSosClick}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#EE7B30] text-white hover:bg-[#d9671e] text-xs font-bold transition-all shadow-level1 cursor-pointer"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#EE7B30] text-white hover:bg-[#d9671e] text-xs font-bold transition-all shadow-level1 cursor-pointer transform hover:scale-102 active:scale-98"
         >
           <PhoneCall className="w-4 h-4" />
           <span>{getTranslation(currentLang, 'sos_btn')}</span>

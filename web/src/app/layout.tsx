@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import { AuthProvider } from '../lib/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Nirvana - Hyperlocal Climate Resilience',
@@ -36,7 +37,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#FBF7EF] text-[#2B2A28] font-body min-h-screen antialiased selection:bg-[#E3F1F4] selection:text-[#006070]">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
