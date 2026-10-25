@@ -74,6 +74,10 @@ const MapComponent = dynamic(
   }
 );
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')}/api/v1`
+  : 'http://127.0.0.1:8000/api/v1';
+
 interface LocationErrorState {
   type: 'denied' | 'unavailable' | 'timeout' | 'unsupported' | 'insecure';
   message: string;
@@ -211,7 +215,7 @@ export default function Home() {
     const syncBackend = async () => {
       try {
         const res = await fetch(
-          `http://127.0.0.1:8000/api/v1/risk/wards?horizon=${horizon}&simulated_rain_mm=${rainfallRate}&simulated_temp_c=${temperatureC}`,
+          `${API_BASE}/risk/wards?horizon=${horizon}&simulated_rain_mm=${rainfallRate}&simulated_temp_c=${temperatureC}`,
           { signal: controller.signal }
         );
         if (res.ok) {
@@ -416,7 +420,7 @@ export default function Home() {
 
       // Query backend FastAPI dynamically for real coordinates
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/risk?lat=${lat}&lng=${lng}`);
+        const res = await fetch(`${API_BASE}/risk?lat=${lat}&lng=${lng}`);
         if (res.ok) {
           const liveData = await res.json();
           console.log('Live dynamic risk computed for coordinates:', liveData);
