@@ -1,0 +1,1294 @@
+<!DOCTYPE html><html class="scroll-smooth" lang="en" style="height: auto; min-height: 100vh; overflow-y: auto !important; overflow-x: hidden; position: static;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<meta content="web_standard" name="shell-type">
+<title>NeighbourWatch - Hyperlocal Climate Resilience</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto !important;
+        overflow-x: hidden;
+      }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary": "#ffffff",
+            "tertiary": "#005b93",
+            "tertiary-container": "#0774b9",
+            "risk-severe": "#D9453D",
+            "risk-high-bg": "#FDE6D6",
+            "risk-severe-bg": "#FBE1DF",
+            "on-secondary-container": "#663500",
+            "surface-bright": "#fdf9f5",
+            "on-secondary-fixed-variant": "#6e3900",
+            "ink-muted": "#6F6A60",
+            "on-background": "#1c1b1a",
+            "saffron-tint": "#FDEBD3",
+            "on-primary-fixed": "#001f26",
+            "surface-white": "#FFFFFF",
+            "risk-moderate": "#F2B134",
+            "outline-variant": "#bec8cb",
+            "secondary": "#914d00",
+            "on-surface-variant": "#3f484b",
+            "on-surface": "#1c1b1a",
+            "surface-tint": "#006879",
+            "teal-tint": "#E3F1F4",
+            "surface-container-highest": "#e6e2de",
+            "risk-low-bg": "#E6F5ED",
+            "risk-low": "#4CAF7A",
+            "surface-cream": "#FBF7EF",
+            "on-primary": "#ffffff",
+            "outline": "#6f797c",
+            "background": "#fdf9f5",
+            "on-primary-container": "#e3f8ff",
+            "on-primary-fixed-variant": "#004e5b",
+            "surface-container-lowest": "#ffffff",
+            "inverse-on-surface": "#f4f0ec",
+            "on-tertiary-fixed": "#001d34",
+            "primary-container": "#1f7a8c",
+            "teal-hover": "#17606F",
+            "secondary-fixed": "#ffdcc3",
+            "error": "#ba1a1a",
+            "surface-dim": "#ddd9d6",
+            "surface-container-high": "#ece7e4",
+            "primary": "#006070",
+            "on-tertiary-fixed-variant": "#004a79",
+            "surface-variant": "#e6e2de",
+            "error-container": "#ffdad6",
+            "on-error": "#ffffff",
+            "primary-fixed": "#a9edff",
+            "surface-container": "#f1edea",
+            "inverse-surface": "#31302e",
+            "surface": "#fdf9f5",
+            "on-error-container": "#93000a",
+            "inverse-primary": "#83d2e6",
+            "tertiary-fixed": "#cfe4ff",
+            "risk-moderate-bg": "#FDF3D8",
+            "on-secondary-fixed": "#2f1500",
+            "surface-sand": "#F3EBDD",
+            "on-tertiary": "#ffffff",
+            "surface-container-low": "#f7f3ef",
+            "secondary-container": "#fc9430",
+            "risk-high": "#EE7B30",
+            "primary-fixed-dim": "#83d2e6",
+            "tertiary-fixed-dim": "#9acbff",
+            "secondary-fixed-dim": "#ffb77d",
+            "on-tertiary-container": "#eff5ff"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "gutter-lg": "2rem",
+            "gutter-sm": "1rem",
+            "space-lg": "1.5rem",
+            "gutter": "1.5rem",
+            "space-xl": "2rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "margin-sm": "1rem",
+            "margin-lg": "3rem",
+            "space-sm": "0.5rem"
+          },
+          fontFamily: {
+            "body-lg": ["Inter", "sans-serif"],
+            "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "body-medium": ["Inter", "sans-serif"],
+            "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "display-hero-mobile": ["Plus Jakarta Sans", "sans-serif"],
+            "label-md": ["Noto Sans", "sans-serif"],
+            "display-hero": ["Plus Jakarta Sans", "sans-serif"],
+            "regional-body": ["Noto Sans", "sans-serif"],
+            "label-lg": ["Noto Sans", "sans-serif"],
+            "label-sm": ["Noto Sans", "sans-serif"],
+            "body-base": ["Inter", "sans-serif"],
+            "headline-lg": ["Plus Jakarta Sans", "sans-serif"]
+          },
+          fontSize: {
+            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+            "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "headline-lg-mobile": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "body-medium": ["16px", { lineHeight: "24px", fontWeight: "500" }],
+            "headline-sm": ["18px", { lineHeight: "24px", fontWeight: "600" }],
+            "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "display-hero-mobile": ["30px", { lineHeight: "38px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "label-md": ["13px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "500" }],
+            "display-hero": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "regional-body": ["16px", { lineHeight: "28px", fontWeight: "400" }],
+            "label-lg": ["15px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }],
+            "label-sm": ["11px", { lineHeight: "16px", letterSpacing: "0.04em", fontWeight: "600" }],
+            "body-base": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "headline-lg": ["28px", { lineHeight: "36px", letterSpacing: "-0.015em", fontWeight: "600" }]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-surface-cream font-body-base text-body-base text-on-surface min-h-screen relative" style="height: auto; min-height: 100vh; overflow-y: auto !important; overflow-x: hidden; position: static;">
+<!-- GLOBAL FIXED HEADER & CIVIC NOTIFICATION BAR -->
+<header class="fixed top-0 left-0 w-full z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] pointer-events-auto">
+<div class="w-full bg-saffron-tint py-1 px-4 lg:px-8 border-b border-secondary/10">
+<div class="max-w-7xl mx-auto flex items-center justify-between text-on-surface">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">campaign</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wide text-secondary font-bold">CIVIC ADVISORY</span>
+<span class="hidden md:inline font-body-sm text-body-sm text-on-surface">Monsoon Preparedness Protocol Active for Southern Coastal &amp; Urban Sectors. Keep emergency audio channels open.</span>
+</div>
+<div class="flex items-center gap-space-md">
+<span class="font-label-sm text-label-sm text-ink-muted hidden sm:inline">Official Ward Operations</span>
+<a class="font-label-sm text-label-sm text-secondary hover:text-on-secondary-fixed-variant underline transition-colors cursor-pointer" data-path="live-risk-map" href="#map-section" onclick="alert('CIVIC PROTOCOL ADVISORY: Level-2 Monsoon Early Warning active. Low-lying basements must activate bilge sump pumps. Public emergency lines: 112 &amp; 1070 are prioritized for immediate rescue.'); return false;">View Protocol</a>
+</div>
+</div>
+</div>
+<div class="w-full bg-surface-white/95 backdrop-blur-md">
+<div class="h-20 max-w-7xl mx-auto px-4 lg:px-8 flex items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md shrink-0">
+<img alt="NeighbourWatch Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XiBRiYWoT1X_UnrntWiQy95WfoYBJ7jJPtnBexxJzqSALQ6Nb2TAGQZOKuANSu0RrOWnLbNdHVgJwkB1Gb599pNLqoHX5oBOlD1wF8x0E223Lf7FH7gNwJzu6_d1eRD5Nq-KLuSDUlcN3XQa7gTVS7L89iOYR3wpG6jHzAKj8EVzft24WzLYDW8a_dilITALoP7JMTXEwO8svmsBlNBSHSzClQhiY2i3BW-HdOpPnjeLTAryWyCkVvf2U">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary tracking-tight">NeighbourWatch</span>
+<span class="hidden xl:inline-flex items-center px-2 py-0.5 rounded-full bg-teal-tint text-primary font-label-sm text-label-sm font-semibold">Hyperlocal Climate Alerts</span>
+</div>
+<span class="font-label-sm text-label-sm text-ink-muted hidden sm:block">Community Resilience &amp; Early Action Network</span>
+</div>
+</div>
+<nav class="hidden xl:flex items-center gap-space-xs bg-surface-sand/40 p-1 rounded-full"><a class="px-3 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onclick="document.getElementById('live-risk-map').scrollIntoView({behavior:'smooth'})">Live Risk Map</a>
+<a class="px-3 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onclick="document.getElementById('features-personas').scrollIntoView({behavior:'smooth'})">Features &amp; Personas</a>
+<a class="px-3 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onclick="document.getElementById('telemetry-section').scrollIntoView({behavior:'smooth'})">Methodology &amp; Data</a>
+<a class="px-3 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onclick="document.getElementById('verified-shelters').scrollIntoView({behavior:'smooth'})">Find Shelters</a>
+<a class="px-3 py-1.5 rounded-full text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors cursor-pointer" onclick="document.getElementById('citizen-reports-section').scrollIntoView({behavior:'smooth'})">Citizen Reports</a></nav>
+<div class="flex items-center gap-space-sm shrink-0">
+<div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-risk-low-bg text-on-surface">
+<span class="w-2 h-2 rounded-full bg-risk-low animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-medium">Live • IMD/NDMA sync</span>
+</div>
+<div class="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-surface-sand text-on-surface cursor-pointer hover:bg-saffron-tint transition-colors" id="btn-lang-top" onclick="const lang = prompt('Select Preferred Language (English, हिन्दी, தமிழ், తెలుగు, ಕನ್ನಡ, മലയാളം, বাংলা, मराठी):', 'தமிழ்'); if (lang) { alert('NeighbourWatch voice bulletins &amp; text translated to: ' + lang); }">
+<span class="material-symbols-outlined text-[16px] text-primary">translate</span>
+<span class="font-label-sm text-label-sm font-regional-body text-regional-body">हिन्दी | தமிழ் | EN</span>
+</div>
+<a class="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-full bg-surface-white text-primary hover:bg-surface-sand hover:text-on-surface font-label-md text-label-md transition-colors shadow-[0_1px_8px_rgba(0,0,0,0.04)] cursor-pointer" href="#personas-section" onclick="prompt('Enter Municipal Officer / Ward Marshal SSO Badge ID:'); alert('Authenticated: Ward 112 Command Console Access Granted.'); return false;">Staff / Ward Login</a>
+<a class="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-teal-hover font-label-md text-label-md shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all cursor-pointer" href="#monitor-section">
+<span class="material-symbols-outlined text-[18px] mr-1.5">my_location</span>Check My Street
+          </a>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1 cursor-pointer">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN SCROLLABLE CONTENT -->
+<main class="w-full pt-28 bg-surface-cream relative min-h-screen">
+<div class="flex flex-col w-full">
+<!-- 0.5 GLOBAL CIVIC TRUST BAR -->
+<section class="w-full bg-surface-white/90 backdrop-blur-md border-b border-surface-sand shadow-sm">
+<div class="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-space-sm text-body-sm">
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-risk-low-bg text-on-surface">
+<span class="w-2 h-2 rounded-full bg-risk-low animate-ping"></span>
+<span class="font-label-sm text-label-sm font-semibold text-primary">Updated 8 mins ago</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-tint text-primary font-label-sm text-label-sm font-medium">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+<span class="">High Confidence (94%)</span>
+<span class="material-symbols-outlined text-[14px] text-ink-muted cursor-pointer" title="Synthesized from IMD Doppler radar, 42 ward IoT telemetry nodes, and calibrated citizen ground reports.">help</span>
+</div>
+<div class="hidden xl:flex items-center gap-1.5 text-ink-muted font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-secondary">info</span>
+<span class="">Advisory only. Follows and never replaces official IMD / NDMA / State SDMA statutory orders.</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm ml-auto">
+<!-- Audio Capsule -->
+<button class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-sand hover:bg-saffron-tint text-on-surface font-label-md text-label-md transition-all shadow-sm group cursor-pointer pointer-events-auto" id="btn-audio-listen">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">volume_up</span>
+<span class="font-regional-body text-regional-body font-medium">🔊 Listen in हिन्दी / English / தமிழ்</span>
+</button>
+<!-- Offline PWA badge -->
+<div class="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-risk-low-bg text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-risk-low">cloud_done</span>
+<span class="text-on-surface font-semibold">Offline Ready</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 1. HERO SECTION: HYPERLOCAL SEARCH & LANGUAGE SELECTOR -->
+<section class="relative w-full overflow-hidden pt-8 pb-12 lg:pt-14 lg:pb-16 bg-gradient-to-b from-surface-cream via-surface-cream to-surface-sand/30">
+<div class="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col items-center text-center">
+<!-- Top Badge -->
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-saffron-tint text-secondary font-label-sm text-label-sm font-bold uppercase tracking-wider mb-6 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">shield_with_heart</span>
+            Hyperlocal Street-Level Predictive Resilience
+          </div>
+<!-- Main Headline -->
+<h1 class="font-display-hero text-display-hero text-on-surface max-w-4xl tracking-tight leading-tight mb-4">
+            Know what’s coming to <span class="text-secondary underline decoration-secondary-container decoration-4 underline-offset-8">your street</span>, before it arrives.
+          </h1>
+<p class="font-body-lg text-body-lg text-ink-muted max-w-3xl mb-8">
+            Street-by-street flood depth and extreme wet-bulb heat warnings in Indian cities, delivered in your mother tongue with verified nearby shelters and community ground truth.
+          </p>
+<!-- Primary Search Dock -->
+<div class="w-full max-w-3xl bg-surface-white rounded-full p-2 pl-5 shadow-[0_12px_32px_-6px_rgba(43,42,40,0.08)] flex flex-col sm:flex-row items-center gap-2 mb-6 pointer-events-auto">
+<div class="flex items-center gap-2 w-full flex-1">
+<span class="material-symbols-outlined text-primary text-[22px] shrink-0">location_on</span>
+<input class="w-full bg-transparent border-0 outline-none text-on-surface font-body-medium text-body-medium placeholder:text-ink-muted/60" id="street-search-input" placeholder="Enter colony, pincode, or ward (e.g. T. Nagar, Indiranagar, Kurla)" type="text" value="Ward 112 - Velachery West, Chennai">
+</div>
+<div class="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+<button class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-surface-sand hover:bg-saffron-tint text-on-surface font-label-sm text-label-sm transition-colors cursor-pointer pointer-events-auto" id="btn-use-gps">
+<span class="material-symbols-outlined text-[16px] text-primary">my_location</span>
+<span class="">Use GPS</span>
+</button>
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-primary-container text-on-primary font-label-lg text-label-lg shadow-sm hover:bg-teal-hover transition-all cursor-pointer pointer-events-auto" href="#monitor-section">
+<span class="">Check My Street</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Mother Tongue Language Rail -->
+<div class="w-full max-w-4xl flex items-center justify-center gap-2 overflow-x-auto py-2 px-1" id="language-rail">
+<span class="font-label-sm text-label-sm uppercase font-semibold text-ink-muted mr-1 hidden sm:inline">Languages:</span>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold shrink-0 shadow-sm cursor-pointer pointer-events-auto">English</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">हिन्दी</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">தமிழ்</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">తెలుగు</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">ಕನ್ನಡ</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">മലയാളം</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">বাংলা</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">मराठी</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">ગુજરાતી</button>
+<button class="lang-pill px-3 py-1.5 rounded-full bg-surface-white hover:bg-teal-tint text-on-surface font-regional-body text-regional-body shrink-0 transition-colors cursor-pointer pointer-events-auto">اردو</button>
+</div>
+</div>
+</section>
+<!-- 2. HERO LIVE RISK MONITOR & WHAT-IF SIMULATOR -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 -mt-2 mb-16" id="monitor-section">
+<div class="bg-surface-white rounded-3xl p-6 lg:p-8 shadow-[0_16px_36px_-6px_rgba(43,42,40,0.07)]">
+<!-- Card Header Strip -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-surface-sand gap-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="inline-flex w-3 h-3 rounded-full bg-risk-high animate-pulse"></span>
+<span class="font-label-lg text-label-lg text-secondary font-bold uppercase tracking-wider">Simulated Hyperlocal Live Watch</span>
+<span class="px-2 py-0.5 rounded-full bg-saffron-tint text-secondary font-label-sm text-label-sm font-semibold">Sensor Active</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mt-1" id="active-ward-title">Ward 112 • Velachery West Basin (Zone 13)</h2>
+<p class="font-body-sm text-body-sm text-ink-muted">Micro-catchment: Lake surplus canal corridor • Elevation: +2.1m MSL</p>
+</div>
+<!-- Predictive Timeline Horizons -->
+<div class="flex items-center gap-1.5 bg-surface-sand/60 p-1.5 rounded-full self-start lg:self-auto overflow-x-auto">
+<button class="timeline-btn active px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold shadow-sm transition-all cursor-pointer pointer-events-auto" data-horizon="now">Now • Active</button>
+<button class="timeline-btn px-4 py-1.5 rounded-full bg-transparent hover:bg-surface-white text-ink-muted font-label-md text-label-md transition-all cursor-pointer pointer-events-auto" data-horizon="6h">+6 Hours</button>
+<button class="timeline-btn px-4 py-1.5 rounded-full bg-transparent hover:bg-surface-white text-ink-muted font-label-md text-label-md transition-all cursor-pointer pointer-events-auto" data-horizon="24h">+24 Hours</button>
+<button class="timeline-btn px-4 py-1.5 rounded-full bg-transparent hover:bg-surface-white text-ink-muted font-label-md text-label-md transition-all cursor-pointer pointer-events-auto" data-horizon="72h">+72 Hours</button>
+</div>
+</div>
+<!-- Dual Gauges & Metrics -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-6">
+<!-- Gauge 1: Flood Inundation Index -->
+<div class="lg:col-span-6 bg-surface-cream/70 rounded-2xl p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-xl bg-risk-high-bg text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">flood</span>
+</div>
+<div>
+<span class="font-label-lg text-label-lg font-bold text-on-surface">Street Inundation Depth</span>
+<span class="block font-label-sm text-label-sm text-ink-muted">Hydrological Runoff Forecast</span>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-risk-high-bg text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wide" id="gauge-risk-badge">Moderate-High</span>
+</div>
+<!-- Gauge Visualization -->
+<div class="flex flex-col sm:flex-row items-center gap-6 my-2">
+<div class="relative w-44 h-24 shrink-0 flex items-end justify-center">
+<svg class="w-full h-full overflow-visible" viewBox="0 0 160 90">
+<path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#E6E2DE" stroke-linecap="round" stroke-width="16"></path>
+<path d="M 20 80 A 60 60 0 0 1 115 28" fill="none" id="flood-gauge-arc" stroke="#EE7B30" stroke-linecap="round" stroke-width="16"></path>
+</svg>
+<div class="absolute bottom-0 flex flex-col items-center">
+<span class="font-display-hero text-display-hero text-on-surface leading-none font-bold" id="flood-depth-val">22<span class="font-headline-sm text-headline-sm text-ink-muted">cm</span></span>
+<span class="font-label-sm text-label-sm text-ink-muted mt-0.5">Waterlogging</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 text-left">
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[18px]">water</span>
+<span id="flood-summary-text" class="">Peak water level expected: <strong>18cm - 25cm in 3h</strong></span>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-ink-muted">
+<span class="material-symbols-outlined text-[18px]">downhill_skiing</span>
+<span class="">Heavy runoff entering storm drain (82% capacity)</span>
+</div>
+<button class="inline-flex items-center gap-1.5 text-primary hover:text-teal-hover font-label-sm text-label-sm font-semibold mt-1 cursor-pointer pointer-events-auto" onclick="alert('Playing voice bulletin: Inundation expected 22cm on 4th Cross Street, move vehicles to high ridge.')">
+<span class="material-symbols-outlined text-[16px]">campaign</span>
+<span class="">Hear Voice Alert (Tamil/English)</span>
+</button>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-surface-sand flex items-center justify-between text-ink-muted font-body-sm text-body-sm">
+<span class="">Low-lying ground floors at caution</span>
+<span class="font-label-sm text-label-sm font-semibold text-secondary">Basement sump pumps engaged</span>
+</div>
+</div>
+<!-- Gauge 2: Extreme Wet-Bulb Heat Index -->
+<div class="lg:col-span-6 bg-surface-cream/70 rounded-2xl p-6 flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-xl bg-risk-moderate-bg text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">thermostat</span>
+</div>
+<div>
+<span class="font-label-lg text-label-lg font-bold text-on-surface">Wet-Bulb Heat Stress</span>
+<span class="block font-label-sm text-label-sm text-ink-muted">Temperature + Humidity Index</span>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-risk-moderate-bg text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wide">Cautious Index</span>
+</div>
+<!-- Gauge Visualization -->
+<div class="flex flex-col sm:flex-row items-center gap-6 my-2">
+<div class="relative w-44 h-24 shrink-0 flex items-end justify-center">
+<svg class="w-full h-full overflow-visible" viewBox="0 0 160 90">
+<path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="#E6E2DE" stroke-linecap="round" stroke-width="16"></path>
+<path d="M 20 80 A 60 60 0 0 1 95 24" fill="none" stroke="#F2B134" stroke-linecap="round" stroke-width="16"></path>
+</svg>
+<div class="absolute bottom-0 flex flex-col items-center">
+<span class="font-display-hero text-display-hero text-on-surface leading-none font-bold">33.2<span class="font-headline-sm text-headline-sm text-ink-muted">°C</span></span>
+<span class="font-label-sm text-label-sm text-ink-muted mt-0.5">Wet-Bulb Temp</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 text-left">
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[18px]">wb_sunny</span>
+<span class="">Ambient: 38.4°C • Relative Humidity: 74%</span>
+</div>
+<div class="flex items-center gap-2 font-body-sm text-body-sm text-ink-muted">
+<span class="material-symbols-outlined text-[18px]">timelapse</span>
+<span class="">Safe outdoor hours: Before 11 AM &amp; After 4 PM</span>
+</div>
+<a class="inline-flex items-center gap-1.5 text-primary hover:text-teal-hover font-label-sm text-label-sm font-semibold mt-1 cursor-pointer pointer-events-auto" href="#shelters-section">
+<span class="material-symbols-outlined text-[16px]">local_drink</span>
+<span class="">View Nearby 4 ORS Hydration Kiosks</span>
+</a>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-surface-sand flex items-center justify-between text-ink-muted font-body-sm text-body-sm">
+<span class="">Outdoor physical labor: 15m rest/hr</span>
+<span class="font-label-sm text-label-sm font-semibold text-primary">Ward Cooling Center Open</span>
+</div>
+</div>
+</div>
+<!-- What-If Rainfall Interactive Simulator Bar -->
+<div class="mt-8 p-5 rounded-2xl bg-surface-sand/50 flex flex-col lg:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</div>
+<div>
+<span class="font-label-lg text-label-lg font-bold text-on-surface">Interactive Micro-Catchment Simulator</span>
+<p class="font-body-sm text-body-sm text-ink-muted">Simulate dynamic cloudburst pressure on local storm drain infrastructure</p>
+</div>
+</div>
+<div class="flex items-center gap-4 w-full lg:w-1/2">
+<span class="font-label-sm text-label-sm font-bold text-ink-muted shrink-0">Intensity:</span>
+<input class="w-full accent-primary h-2 bg-surface-white rounded-lg cursor-pointer pointer-events-auto" id="rain-sim-slider" max="120" min="10" type="range" value="45">
+<span class="font-headline-sm text-headline-sm font-bold text-primary shrink-0 w-24 text-right" id="rain-sim-val">45 mm/hr</span>
+</div>
+<div class="px-3 py-1.5 rounded-full bg-saffron-tint text-on-secondary-container font-label-sm text-label-sm font-bold shrink-0" id="sim-badge">
+              Moderate Runoff Alert
+            </div>
+</div>
+</div>
+</section>
+<!-- 3. WHAT TO DO RIGHT NOW (PERSONALIZED ACTION CHECKLIST) -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 mb-16" id="checklist-section">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<div class="inline-flex items-center gap-1.5 text-secondary font-label-sm text-label-sm font-bold uppercase tracking-wider mb-2">
+<span class="material-symbols-outlined text-[16px]">task_alt</span>
+              Urgent Hyperlocal Protocol
+            </div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">What to do right now on your street</h2>
+<p class="font-body-base text-body-base text-ink-muted">Actionable steps prioritized for ground-floor residents, shopkeepers, and caregivers.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 rounded-full bg-surface-white hover:bg-surface-sand text-on-surface font-label-md text-label-md shadow-sm transition-all cursor-pointer pointer-events-auto" id="btn-mark-all-done">
+              Mark All Completed
+            </button>
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary-container text-on-primary hover:bg-teal-hover font-label-md text-label-md shadow-sm transition-all cursor-pointer pointer-events-auto" onclick="window.print()">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span class="">Download 1-Page PDF</span>
+</button>
+</div>
+</div>
+<!-- 4 Action Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Action 1 -->
+<div class="checklist-card bg-surface-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group pointer-events-auto select-none" data-checked="false">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="px-2.5 py-1 rounded-full bg-risk-high-bg text-secondary font-label-sm text-label-sm font-semibold">Priority 1 • Flood</span>
+<div class="check-box w-7 h-7 rounded-full border border-surface-sand flex items-center justify-center group-hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0 transition-opacity">check</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-teal-tint text-primary flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[26px]">home_repair_service</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Elevate Essential Goods</h3>
+<p class="font-body-sm text-body-sm text-ink-muted">Move ground appliances, food grain bags, and medicines at least 2 feet above floor level.</p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand flex items-center justify-between text-ink-muted font-label-sm text-label-sm">
+<span class="">Target: Before 4:30 PM</span>
+<span class="text-primary font-bold">Recommended</span>
+</div>
+</div>
+<!-- Action 2 -->
+<div class="checklist-card bg-surface-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group pointer-events-auto select-none" data-checked="false">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="px-2.5 py-1 rounded-full bg-saffron-tint text-secondary font-label-sm text-label-sm font-semibold">Mobility Advisory</span>
+<div class="check-box w-7 h-7 rounded-full border border-surface-sand flex items-center justify-center group-hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0 transition-opacity">check</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-saffron-tint text-secondary flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[26px]">no_crash</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Avoid 100-Ft Subway</h3>
+<p class="font-body-sm text-body-sm text-ink-muted">The railway underpass is collecting 35cm runoff. Use bypass road via Inner Ring overpass.</p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand flex items-center justify-between text-ink-muted font-label-sm text-label-sm">
+<span class="">Alternate route: +8 mins</span>
+<span class="text-secondary font-bold">Active Block</span>
+</div>
+</div>
+<!-- Action 3 -->
+<div class="checklist-card bg-surface-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group pointer-events-auto select-none" data-checked="false">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="px-2.5 py-1 rounded-full bg-teal-tint text-primary font-label-sm text-label-sm font-semibold">Power Resilience</span>
+<div class="check-box w-7 h-7 rounded-full border border-surface-sand flex items-center justify-center group-hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0 transition-opacity">check</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-teal-tint text-primary flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[26px]">battery_charging_full</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Pre-Charge Power Banks</h3>
+<p class="font-body-sm text-body-sm text-ink-muted">Grid shutdown scheduled at feeder substation if water touches transformer bed.</p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand flex items-center justify-between text-ink-muted font-label-sm text-label-sm">
+<span class="">Feeder Substation 4</span>
+<span class="text-primary font-bold">Preparation</span>
+</div>
+</div>
+<!-- Action 4 -->
+<div class="checklist-card bg-surface-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group pointer-events-auto select-none" data-checked="false">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="px-2.5 py-1 rounded-full bg-risk-low-bg text-risk-low font-label-sm text-label-sm font-semibold">Health &amp; Hydration</span>
+<div class="check-box w-7 h-7 rounded-full border border-surface-sand flex items-center justify-center group-hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[16px] text-primary opacity-0 transition-opacity">check</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-risk-low-bg text-risk-low flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[26px]">water_bottle</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Boil Water &amp; Prepare ORS</h3>
+<p class="font-body-sm text-body-sm text-ink-muted">High water table causes municipal pipeline contamination. Boil tap water 10 minutes.</p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand flex items-center justify-between text-ink-muted font-label-sm text-label-sm">
+<span class="">Children &amp; Elders first</span>
+<span class="text-risk-low font-bold">Critical</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. INTERACTIVE HYPERLOCAL CIVIC RISK MAP PREVIEW -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 mb-16" id="live-risk-map">
+<div class="bg-surface-white rounded-3xl p-6 lg:p-8 shadow-[0_12px_32px_-6px_rgba(43,42,40,0.06)] overflow-hidden">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between pb-6 gap-4">
+<div>
+<span class="inline-flex items-center gap-1.5 text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px]">layers</span>
+                Spatial Ward Intelligence
+              </span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mt-1">Live Multi-Layered Urban Risk Canopy</h2>
+<p class="font-body-sm text-body-sm text-ink-muted">Real-time intersection of runoff contours, wet-bulb heat islands, and active community havens.</p>
+</div>
+<!-- Map Layer Toggles -->
+<div class="flex flex-wrap items-center gap-2">
+<button class="layer-toggle px-3 py-1.5 rounded-full bg-teal-tint text-primary font-label-sm text-label-sm font-bold shadow-sm cursor-pointer pointer-events-auto" data-layer="flood">
+                🌊 Flood Inundation
+              </button>
+<button class="layer-toggle px-3 py-1.5 rounded-full bg-surface-sand hover:bg-surface-cream text-on-surface font-label-sm text-label-sm font-medium cursor-pointer pointer-events-auto" data-layer="heat">
+                🔥 Heat Stress
+              </button>
+<button class="layer-toggle px-3 py-1.5 rounded-full bg-surface-sand hover:bg-surface-cream text-on-surface font-label-sm text-label-sm font-medium cursor-pointer pointer-events-auto" data-layer="drains">
+                🚜 Storm Drains
+              </button>
+<button class="layer-toggle px-3 py-1.5 rounded-full bg-surface-sand hover:bg-surface-cream text-on-surface font-label-sm text-label-sm font-medium cursor-pointer pointer-events-auto" data-layer="shelters">
+                ⛺ Verified Shelters
+              </button>
+<button class="layer-toggle px-3 py-1.5 rounded-full bg-surface-sand hover:bg-surface-cream text-on-surface font-label-sm text-label-sm font-medium cursor-pointer pointer-events-auto" data-layer="citizen">
+                📢 Citizen Reports (14)
+              </button>
+</div>
+</div>
+<!-- Rich Interactive SVG Map Visual -->
+<div class="relative w-full h-[440px] rounded-2xl bg-surface-cream overflow-hidden shadow-inner border border-surface-sand">
+<!-- Vector Map Canvas -->
+<svg class="w-full h-full object-cover" viewBox="0 0 1000 500">
+<defs>
+<pattern height="40" id="grid" patternUnits="userSpaceOnUse" width="40">
+<path d="M 40 0 L 0 0 0 40" fill="none" opacity="0.6" stroke="#E6E2DE" stroke-width="0.8"></path>
+</pattern>
+</defs>
+<rect fill="url(#grid)" height="500" width="1000"></rect>
+<!-- Lake / Reservoir Feature -->
+<path d="M 120 40 C 260 20, 320 140, 240 220 C 160 300, 40 260, 60 140 Z" fill="#E3F1F4" stroke="#83D2E6" stroke-width="2"></path>
+<text class="font-label-sm text-label-sm fill-primary font-semibold" x="140" y="160">Velachery Lake Basin</text>
+<!-- Ward Polygons -->
+<polygon class="hover:opacity-100 cursor-pointer transition-opacity" fill="#E6F5ED" opacity="0.85" points="340,40 540,60 500,180 320,150" stroke="#4CAF7A" stroke-width="2">
+<title>Ward 110: Elevated Ridge - Low Risk</title>
+</polygon>
+<text class="font-label-sm text-label-sm fill-on-surface font-medium" x="390" y="110">Ward 110 (Dry)</text>
+<polygon class="cursor-pointer" fill="#FDE6D6" id="ward-112-poly" opacity="0.9" points="320,150 500,180 470,360 260,340" stroke="#EE7B30" stroke-width="3">
+<title>Ward 112: Inundation Watch (18-25cm)</title>
+</polygon>
+<text class="font-label-md text-label-md fill-secondary font-bold" x="340" y="250">Ward 112 (Active Alert)</text>
+<polygon class="cursor-pointer" fill="#FDF3D8" opacity="0.85" points="500,180 720,140 760,300 470,360" stroke="#F2B134" stroke-width="2">
+<title>Ward 114: Moderate Slit Risk</title>
+</polygon>
+<text class="font-label-sm text-label-sm fill-on-surface font-medium" x="560" y="240">Ward 114 (12cm)</text>
+<polygon class="cursor-pointer" fill="#E6F5ED" opacity="0.85" points="720,140 920,120 950,280 760,300" stroke="#4CAF7A" stroke-width="2"></polygon>
+<text class="font-label-sm text-label-sm fill-on-surface font-medium" x="810" y="210">Ward 115 (Safe)</text>
+<!-- Storm Drain Lines -->
+<path d="M 280 180 L 360 240 L 450 300 L 520 420" fill="none" stroke="#1F7A8C" stroke-dasharray="6,4" stroke-width="3.5"></path>
+<text class="font-label-sm text-label-sm fill-primary font-semibold" x="470" y="325">Main Storm Drain Trunk</text>
+<!-- Shelter Markers -->
+<g class="cursor-pointer" onclick="alert('Shelter selected: St. Thomas Community Hall (78 spots free)')" transform="translate(420, 210)">
+<circle cx="0" cy="0" fill="#006070" r="14" stroke="#FFFFFF" stroke-width="2.5"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="0" y="4">⛺</text>
+</g>
+<g class="cursor-pointer" onclick="alert('Shelter selected: Corporation Primary School (62 spots free)')" transform="translate(680, 260)">
+<circle cx="0" cy="0" fill="#006070" r="14" stroke="#FFFFFF" stroke-width="2.5"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="0" y="4">⛺</text>
+</g>
+<!-- Blocked Culvert Hazard Marker -->
+<g class="cursor-pointer" onclick="alert('Hazard: Blocked Culvert #4 - JCB pump operating')" transform="translate(360, 240)">
+<circle class="animate-pulse" cx="0" cy="0" fill="#D9453D" r="10" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="9" font-weight="bold" text-anchor="middle" x="0" y="3">!</text>
+</g>
+</svg>
+<!-- Floating Glassmorphic Ward Detail Drawer -->
+<div class="absolute top-4 left-4 max-w-sm bg-surface-white/95 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-surface-sand/80 pointer-events-auto">
+<div class="flex items-center justify-between mb-2">
+<span class="px-2 py-0.5 rounded-full bg-risk-high-bg text-secondary font-label-sm text-label-sm font-bold uppercase">Sector Under Watch</span>
+<span class="font-label-sm text-label-sm text-ink-muted">Elev: +2.1m MSL</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Velachery South Main Rd (Ward 112)</h4>
+<p class="font-body-sm text-body-sm text-ink-muted mt-1">Culvert #4 debris threshold exceeded. Municipal JCB desilting crew on site with 2 high-capacity diesel pumps.</p>
+<div class="mt-4 flex items-center justify-between pt-3 border-t border-surface-sand text-body-sm">
+<div class="flex items-center gap-1.5 text-secondary font-semibold font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="">18cm Runoff Depth</span>
+</div>
+<a class="text-primary hover:underline font-label-sm text-label-sm font-bold cursor-pointer" href="#shelters-section">Open Full Screen Map →</a>
+</div>
+</div>
+<!-- Floating Legend & Quick Controls -->
+<div class="absolute bottom-4 right-4 bg-surface-white/95 backdrop-blur-md px-4 py-2.5 rounded-full shadow-md border border-surface-sand flex items-center gap-4 text-label-sm pointer-events-auto">
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-risk-low"></span><span class="">Safe (0-5cm)</span></div>
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-risk-moderate"></span><span class="">Caution (5-15cm)</span></div>
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-risk-high"></span><span class="">Severe (15-35cm)</span></div>
+<div class="hidden sm:flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-primary"></span><span class="">Relief Haven</span></div>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. VERIFIED NEARBY SHELTERS & SAFE HAVENS -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 mb-16" id="verified-shelters">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<div class="inline-flex items-center gap-1.5 text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider mb-2">
+<span class="material-symbols-outlined text-[16px]">roofing</span>
+              Civilian Evacuation Network
+            </div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Verified Relief Shelters Nearby</h2>
+<p class="font-body-base text-body-base text-ink-muted">Community halls, corporation schools, and disaster shelters checked by ward marshals.</p>
+</div>
+<button class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-surface-white hover:bg-surface-sand text-primary font-label-md text-label-md shadow-sm transition-all cursor-pointer pointer-events-auto" onclick="alert('Viewing all 18 registered disaster relief shelters in Zone 13.')">
+<span class="">View All 18 Ward Shelters</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Shelters Mosaic Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Shelter Card 1 -->
+<div class="bg-surface-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between border border-surface-sand pointer-events-auto">
+<div>
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-tint text-primary font-label-sm text-label-sm font-bold">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+                  Verified by Municipality (Ward Officer #14)
+                </span>
+<span class="font-label-sm text-label-sm font-semibold text-ink-muted bg-surface-sand/50 px-2.5 py-1 rounded-full">
+                  650m away • ~8 min walk
+                </span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">St. Thomas Community Hall &amp; Relief Camp</h3>
+<p class="font-body-sm text-body-sm text-ink-muted mt-1">4th Cross Street, Venkateswara Nagar (Direct high-ground access via 100ft arterial)</p>
+<!-- Occupancy Meter -->
+<div class="mt-5 p-4 rounded-2xl bg-surface-cream">
+<div class="flex items-center justify-between font-label-sm text-label-sm mb-1.5">
+<span class="text-on-surface font-semibold">Live Capacity: 42 / 120 occupied</span>
+<span class="text-risk-low font-bold">78 Spaces Free</span>
+</div>
+<div class="w-full h-2.5 rounded-full bg-surface-sand overflow-hidden">
+<div class="w-[35%] h-full bg-primary rounded-full"></div>
+</div>
+</div>
+<!-- Amenities Icon Matrix -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-5">
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">water_drop</span>
+<span class="">Clean Water</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">file_download_done</span>
+<span class="">Diesel Gen (24h)</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">female</span>
+<span class="">Women Safe Area</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">medical_services</span>
+<span class="">Paramedic Kit</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">accessible</span>
+<span class="">Ramp Access</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">pets</span>
+<span class="">Pet Friendly</span>
+</div>
+</div>
+</div>
+<!-- Card Action Footer -->
+<div class="mt-6 pt-4 border-t border-surface-sand flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">person</span>
+<div class="text-left font-body-sm text-body-sm">
+<span class="block font-semibold text-on-surface">Warden: K. Ramanathan</span>
+<span class="text-ink-muted">+91 94440 28192</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<a class="px-4 py-2 rounded-full bg-surface-sand hover:bg-saffron-tint text-on-surface font-label-md text-label-md transition-colors cursor-pointer" href="tel:9444028192">
+                  Call Warden
+                </a>
+<button class="px-5 py-2 rounded-full bg-primary-container text-on-primary hover:bg-teal-hover font-label-md text-label-md shadow-sm transition-all flex items-center gap-1.5 cursor-pointer" onclick="alert('Opening navigation route avoiding inundated subway via arterial ridge...')">
+<span class="material-symbols-outlined text-[17px]">directions</span>
+<span class="">Safe Walking Route</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Shelter Card 2 -->
+<div class="bg-surface-white rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between border border-surface-sand pointer-events-auto">
+<div>
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-risk-low-bg text-risk-low font-label-sm text-label-sm font-bold">
+<span class="material-symbols-outlined text-[15px]">verified_user</span>
+                  Verified by Resident Welfare Association (RWA)
+                </span>
+<span class="font-label-sm text-label-sm font-semibold text-ink-muted bg-surface-sand/50 px-2.5 py-1 rounded-full">
+                  1.2 km away • ~14 min walk
+                </span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Corporation Primary School Relief Point</h3>
+<p class="font-body-sm text-body-sm text-ink-muted mt-1">Gandhi Nagar 2nd Street (First floor classrooms reserved for elder care &amp; infants)</p>
+<!-- Occupancy Meter -->
+<div class="mt-5 p-4 rounded-2xl bg-surface-cream">
+<div class="flex items-center justify-between font-label-sm text-label-sm mb-1.5">
+<span class="text-on-surface font-semibold">Live Capacity: 18 / 80 occupied</span>
+<span class="text-risk-low font-bold">62 Spaces Free</span>
+</div>
+<div class="w-full h-2.5 rounded-full bg-surface-sand overflow-hidden">
+<div class="w-[22%] h-full bg-risk-low rounded-full"></div>
+</div>
+</div>
+<!-- Amenities Icon Matrix -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-5">
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">water_drop</span>
+<span class="">Clean Water Kiosk</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">solar_power</span>
+<span class="">Solar Backup</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">child_care</span>
+<span class="">Infant Nutrition</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">vaccines</span>
+<span class="">Anti-Venom / First Aid</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">kitchen</span>
+<span class="">Community Kitchen</span>
+</div>
+<div class="flex items-center gap-2 p-2 rounded-xl bg-surface-sand/30 font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">wifi</span>
+<span class="">Mesh Comms (No Telco)</span>
+</div>
+</div>
+</div>
+<!-- Card Action Footer -->
+<div class="mt-6 pt-4 border-t border-surface-sand flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">person</span>
+<div class="text-left font-body-sm text-body-sm">
+<span class="block font-semibold text-on-surface">Warden: Selvi Anitha</span>
+<span class="text-ink-muted">+91 98841 09321</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<a class="px-4 py-2 rounded-full bg-surface-sand hover:bg-saffron-tint text-on-surface font-label-md text-label-md transition-colors cursor-pointer" href="tel:9884109321">
+                  Call Warden
+                </a>
+<button class="px-5 py-2 rounded-full bg-primary-container text-on-primary hover:bg-teal-hover font-label-md text-label-md shadow-sm transition-all flex items-center gap-1.5 cursor-pointer" onclick="alert('Routing to Gandhi Nagar 2nd Street primary school...')">
+<span class="material-symbols-outlined text-[17px]">directions</span>
+<span class="">Safe Walking Route</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. BUILT FOR EVERY CITIZEN PERSONA MODULE -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 mb-16" id="features-personas">
+<div class="text-center max-w-3xl mx-auto mb-12">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-saffron-tint text-secondary font-label-sm text-label-sm font-bold uppercase tracking-wider mb-2">
+            Universal Civic Accessibility
+          </span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Tailored for everyday realities, not ideal conditions</h2>
+<p class="font-body-base text-body-base text-ink-muted">Different residents face fundamentally different threats during the same extreme weather event.</p>
+</div>
+<!-- 4 Persona Lift Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Persona 1 -->
+<div class="bg-surface-white rounded-3xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all flex flex-col justify-between border border-surface-sand cursor-pointer pointer-events-auto">
+<div>
+<div class="w-14 h-14 rounded-2xl bg-saffron-tint text-secondary flex items-center justify-center mb-5">
+<span class="material-symbols-outlined text-[32px]">engineering</span>
+</div>
+<span class="font-label-sm text-label-sm font-bold text-secondary uppercase tracking-wider">Outdoor &amp; Informal Workers</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Delivery &amp; Construction</h3>
+<p class="font-body-sm text-body-sm text-ink-muted leading-relaxed">
+                Real-time heat-stress halts, verified drinking water / ORS kiosks on gig routes, and non-penalized weather delay certificates for delivery apps.
+              </p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold">
+<span class="">Audio SMS + WhatsApp Bot</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+<!-- Persona 2 -->
+<div class="bg-surface-white rounded-3xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all flex flex-col justify-between border border-surface-sand cursor-pointer pointer-events-auto">
+<div>
+<div class="w-14 h-14 rounded-2xl bg-teal-tint text-primary flex items-center justify-center mb-5">
+<span class="material-symbols-outlined text-[32px]">elderly</span>
+</div>
+<span class="font-label-sm text-label-sm font-bold text-primary uppercase tracking-wider">Elderly &amp; Caregivers</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Chronic Care &amp; Seniors</h3>
+<p class="font-body-sm text-body-sm text-ink-muted leading-relaxed">
+                Oxygen concentrator &amp; insulin cooler backup power notices, large-print multi-lingual cards, and priority ward volunteer assisted-lift alerts.
+              </p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold">
+<span class="">Single-Tap "Assistance Needed"</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+<!-- Persona 3 -->
+<div class="bg-surface-white rounded-3xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all flex flex-col justify-between border border-surface-sand cursor-pointer pointer-events-auto">
+<div>
+<div class="w-14 h-14 rounded-2xl bg-risk-high-bg text-secondary flex items-center justify-center mb-5">
+<span class="material-symbols-outlined text-[32px]">cottage</span>
+</div>
+<span class="font-label-sm text-label-sm font-bold text-secondary uppercase tracking-wider">Basin &amp; Informal Settlements</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Canal Edge Dwellers</h3>
+<p class="font-body-sm text-body-sm text-ink-muted leading-relaxed">
+                3-hour upstream nala surge warnings before water overtops the embankment, zero-data SMS blast, and safe animal shelter coordinates.
+              </p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold">
+<span class="">Early Sirens &amp; Paging</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+<!-- Persona 4 -->
+<div class="bg-surface-white rounded-3xl p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all flex flex-col justify-between border border-surface-sand cursor-pointer pointer-events-auto">
+<div>
+<div class="w-14 h-14 rounded-2xl bg-risk-low-bg text-risk-low flex items-center justify-center mb-5">
+<span class="material-symbols-outlined text-[32px]">badge</span>
+</div>
+<span class="font-label-sm text-label-sm font-bold text-risk-low uppercase tracking-wider">Civic Stewards &amp; Officers</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mt-1 mb-2">Ward Engineers &amp; RWA</h3>
+<p class="font-body-sm text-body-sm text-ink-muted leading-relaxed">
+                Citizen geotag triage portal, mobile diesel pump dispatch tracker, and automated shelter headcount sync with District Emergency Operations Centre.
+              </p>
+</div>
+<div class="mt-6 pt-3 border-t border-surface-sand">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold">
+<span class="">Staff Console Access</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. CITIZEN GROUND-REPORTING & LOW-CONNECTIVITY SMS BANNER -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 mb-16" id="citizen-reports-section">
+<div class="bg-surface-white rounded-3xl p-6 lg:p-8 shadow-[0_10px_30px_-5px_rgba(31,122,140,0.06)] border border-surface-sand">
+<!-- SMS Low connectivity callout -->
+<div class="bg-saffron-tint/60 rounded-2xl p-4 lg:p-5 flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary text-surface-white flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">signal_cellular_alt_1_bar</span>
+</div>
+<div>
+<span class="font-label-lg text-label-lg font-bold text-secondary">No Internet or 2G Network Only?</span>
+<p class="font-body-sm text-body-sm text-on-surface">Text <code class="px-2 py-0.5 rounded bg-surface-white font-bold text-secondary">ALERT 600042</code> to <span class="font-bold text-secondary">56161</span> for automated maternal-language voice and SMS alerts.</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold text-secondary px-3 py-1 rounded-full bg-surface-white shrink-0">
+              Toll-Free • Zero Data Needed
+            </span>
+</div>
+<!-- Live Verified Reports Feed Strip -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Recent Verified Ground Reports</h3>
+<p class="font-body-sm text-body-sm text-ink-muted">Citizen observations cross-checked by neighborhood volunteers</p>
+</div>
+<button class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-primary-container text-on-primary hover:bg-teal-hover font-label-md text-label-md shadow-sm transition-all self-start lg:self-auto cursor-pointer pointer-events-auto" id="btn-submit-report">
+<span class="material-symbols-outlined text-[18px]">add_location_alt</span>
+<span class="">Submit A Citizen Report</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="reports-grid">
+<!-- Report 1 -->
+<div class="p-4 rounded-2xl bg-surface-cream border border-surface-sand/80 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-ink-muted mb-2">
+<span class="font-semibold text-on-surface">North Gate Underpass</span>
+<span class="">12m ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">"Waterlogging ~6 inches. Two-wheelers slipping near sewer grate."</p>
+</div>
+<div class="mt-4 flex items-center justify-between text-label-sm text-ink-muted">
+<span class="inline-flex items-center gap-1 text-risk-low font-semibold">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+                  Confirmed by 4 neighbors
+                </span>
+<span class="material-symbols-outlined text-[18px] text-primary cursor-pointer hover:scale-125 transition-transform" onclick="this.classList.toggle('text-secondary')">thumb_up</span>
+</div>
+</div>
+<!-- Report 2 -->
+<div class="p-4 rounded-2xl bg-surface-cream border border-surface-sand/80 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-ink-muted mb-2">
+<span class="font-semibold text-on-surface">Rajiv Gandhi Salai Junc</span>
+<span class="">28m ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">"Municipal pump deployed. Drain desilting underway, water receding."</p>
+</div>
+<div class="mt-4 flex items-center justify-between text-label-sm text-ink-muted">
+<span class="inline-flex items-center gap-1 text-risk-low font-semibold">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+                  Confirmed by Ward Champion
+                </span>
+<span class="material-symbols-outlined text-[18px] text-primary cursor-pointer hover:scale-125 transition-transform" onclick="this.classList.toggle('text-secondary')">thumb_up</span>
+</div>
+</div>
+<!-- Report 3 -->
+<div class="p-4 rounded-2xl bg-surface-cream border border-surface-sand/80 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-ink-muted mb-2">
+<span class="font-semibold text-on-surface">Venkateswara Primary School</span>
+<span class="">41m ago</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">"Drinking water tanker filled. Safe shelter point active with power."</p>
+</div>
+<div class="mt-4 flex items-center justify-between text-label-sm text-ink-muted">
+<span class="inline-flex items-center gap-1 text-primary font-semibold">
+<span class="material-symbols-outlined text-[15px]">shield</span>
+                  Official Shelter Verified
+                </span>
+<span class="material-symbols-outlined text-[18px] text-primary cursor-pointer hover:scale-125 transition-transform" onclick="this.classList.toggle('text-secondary')">thumb_up</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. TRANSPARENCY, DATA INTEGRITY & SCIENTIFIC RIGOR -->
+<section class="w-full max-w-7xl mx-auto px-4 lg:px-8 mb-24" id="telemetry-section">
+<div class="bg-surface-sand/40 rounded-3xl p-8 border border-surface-sand flex flex-col lg:flex-row items-center justify-between gap-8">
+<div class="max-w-xl">
+<span class="font-label-sm text-label-sm uppercase font-bold text-primary tracking-wider">Multi-Agency Telemetry Fabric</span>
+<h3 class="font-headline-md text-headline-md text-on-surface mt-1 mb-2">Validated against national meteorological &amp; state hydrological models</h3>
+<p class="font-body-sm text-body-sm text-ink-muted leading-relaxed">
+              NeighbourWatch continuously calibrates IMD Doppler radar data, Copernicus Sentinel SAR soil moisture, and municipal culvert IoT depth sensors against verified citizen observations to eliminate false alarms and maximize hyper-local precision.
+            </p>
+</div>
+<!-- Trust Badges Strip -->
+<div class="flex flex-wrap items-center justify-center gap-3">
+<div class="px-4 py-3 rounded-2xl bg-surface-white shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">radar</span>
+<div class="text-left">
+<span class="block font-label-sm text-label-sm font-bold text-on-surface">IMD Radar</span>
+<span class="text-ink-muted text-[11px]">Realtime Reflectivity</span>
+</div>
+</div>
+<div class="px-4 py-3 rounded-2xl bg-surface-white shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[22px]">satellite_alt</span>
+<div class="text-left">
+<span class="block font-label-sm text-label-sm font-bold text-on-surface">Sentinel-1 SAR</span>
+<span class="text-ink-muted text-[11px]">Surface Water Extent</span>
+</div>
+</div>
+<div class="px-4 py-3 rounded-2xl bg-surface-white shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-risk-low text-[22px]">sensors</span>
+<div class="text-left">
+<span class="block font-label-sm text-label-sm font-bold text-on-surface">Ward IoT Nodes</span>
+<span class="text-ink-muted text-[11px]">Storm Drain Capacity</span>
+</div>
+</div>
+<div class="px-4 py-3 rounded-2xl bg-surface-white shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">groups</span>
+<div class="text-left">
+<span class="block font-label-sm text-label-sm font-bold text-on-surface">Ground Truth</span>
+<span class="text-ink-muted text-[11px]">Human Verification</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- FOOTER -->
+<footer class="w-full bg-surface-sand/70 text-on-surface shadow-[0_1px_8px_rgba(0,0,0,0.04)] pb-24">
+<div class="max-w-7xl mx-auto px-4 lg:px-8 py-12">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-12">
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<img alt="NeighbourWatch Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XiBRiYWoT1X_UnrntWiQy95WfoYBJ7jJPtnBexxJzqSALQ6Nb2TAGQZOKuANSu0RrOWnLbNdHVgJwkB1Gb599pNLqoHX5oBOlD1wF8x0E223Lf7FH7gNwJzu6_d1eRD5Nq-KLuSDUlcN3XQa7gTVS7L89iOYR3wpG6jHzAKj8EVzft24WzLYDW8a_dilITALoP7JMTXEwO8svmsBlNBSHSzClQhiY2i3BW-HdOpPnjeLTAryWyCkVvf2U">
+<span class="font-headline-sm text-headline-sm text-primary">NeighbourWatch</span>
+</div>
+<p class="font-body-sm text-body-sm text-ink-muted leading-relaxed">Civic guardian network delivering street-level early warnings, hydrological forecasts, and neighbor-assisted humanitarian response.</p>
+<div class="flex items-center gap-space-xs mt-2">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface-white text-primary font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px] mr-1 text-risk-low">verified</span>NDMA Integrated
+            </span>
+</div>
+</div>
+<div class="flex flex-col gap-space-sm">
+<span class="font-label-lg text-label-lg text-primary uppercase tracking-wide">Emergency Helplines</span>
+<div class="flex flex-col gap-space-xs">
+<a class="flex items-center justify-between p-2.5 rounded-xl bg-surface-white hover:bg-surface-bright transition-colors" href="tel:112">
+<span class="font-body-sm text-body-sm font-medium">National Emergency</span>
+<span class="font-headline-sm text-headline-sm text-error">112</span>
+</a>
+<a class="flex items-center justify-between p-2.5 rounded-xl bg-surface-white hover:bg-surface-bright transition-colors" href="tel:108">
+<span class="font-body-sm text-body-sm font-medium">Disaster Medical Ambulance</span>
+<span class="font-headline-sm text-headline-sm text-secondary">108</span>
+</a>
+<a class="flex items-center justify-between p-2.5 rounded-xl bg-surface-white hover:bg-surface-bright transition-colors" href="tel:1070">
+<span class="font-body-sm text-body-sm font-medium">State Flood Response Desk</span>
+<span class="font-label-md text-label-md font-bold text-primary">1070</span>
+</a>
+</div>
+</div>
+<div class="flex flex-col gap-space-sm">
+<span class="font-label-lg text-label-lg text-primary uppercase tracking-wide">Civic Portals</span>
+<ul class="flex flex-col gap-space-xs font-body-sm text-body-sm text-ink-muted">
+<li class="hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('monitor-section').scrollIntoView({behavior:'smooth'})">Ward Resilience Dashboard</li>
+<li class="hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('shelters-section').scrollIntoView({behavior:'smooth'})">Community Shelter Locator</li>
+<li class="hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('btn-audio-listen').click()">Audio Bulletin Broadcasts</li>
+<li class="hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('telemetry-section').scrollIntoView({behavior:'smooth'})">Open Hydro-Data &amp; API</li>
+<li class="hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('citizen-reports-section').scrollIntoView({behavior:'smooth'})">Volunteer Marshall Network</li>
+</ul>
+</div>
+<div class="flex flex-col gap-space-sm">
+<span class="font-label-lg text-label-lg text-primary uppercase tracking-wide">Synthetic Data Notice</span>
+<div class="p-3.5 rounded-xl bg-surface-white text-ink-muted font-body-sm text-body-sm leading-relaxed">
+<span class="material-symbols-outlined text-secondary text-[16px] inline-block align-text-bottom mr-1">info</span>
+            Portions of real-time municipal sensor and evacuation telemetry are modeled through verified hydrological simulations for public preparedness validation.
+          </div>
+<div class="flex items-center gap-space-xs text-ink-muted font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">lock</span>End-to-End Civic Integrity &amp; Sovereign Data Hosting
+          </div>
+</div>
+</div>
+<div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-space-md text-ink-muted font-body-sm text-body-sm border-t border-surface-sand">
+<p class="">© 2025 NeighbourWatch Civic Collective. Released under Public Domain &amp; Open Municipal Data License.</p>
+<div class="flex items-center gap-space-lg font-label-md text-label-md">
+<span class="hover:text-primary transition-colors cursor-pointer">Accessibility Statement</span>
+<span class="hover:text-primary transition-colors cursor-pointer">Privacy Charter</span>
+<span class="hover:text-primary transition-colors cursor-pointer">Ward Directory</span>
+</div>
+</div>
+</div>
+</footer>
+<!-- 9. FLOATING BOTTOM CIVIC ACTION DOCK (Clean floating pill, clicks pass through background container) -->
+<div class="fixed bottom-4 left-0 w-full z-50 pointer-events-none flex justify-center px-4">
+<aside aria-label="Emergency quick actions" class="pointer-events-auto bg-surface-white/95 backdrop-blur-lg rounded-full px-4 py-2.5 shadow-[0_12px_36px_rgba(43,42,40,0.18)] border border-surface-sand flex items-center justify-between gap-3 max-w-lg w-full">
+<!-- I'm Safe Ping Button -->
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-risk-low-bg hover:bg-risk-low hover:text-surface-white text-risk-low font-label-md text-label-md font-semibold transition-all cursor-pointer pointer-events-auto" id="btn-im-safe">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="hidden sm:inline">I'm Safe</span>
+<span class="sm:hidden">Safe</span>
+</button>
+<!-- Contrast Mode Switcher -->
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-sand hover:bg-surface-cream text-on-surface font-label-sm text-label-sm transition-colors cursor-pointer pointer-events-auto" id="btn-toggle-contrast">
+<span class="material-symbols-outlined text-[16px] text-primary">contrast</span>
+<span class="hidden md:inline">High Contrast</span>
+</button>
+<!-- Primary SOS Emergency Callout -->
+<a class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-risk-severe text-surface-white font-label-lg text-label-lg font-bold shadow-md hover:scale-105 transition-all animate-pulse cursor-pointer pointer-events-auto" href="tel:112">
+<span class="material-symbols-outlined text-[20px]">sos</span>
+<span class="">SOS (112)</span>
+</a>
+</aside>
+</div>
+<!-- Interactive JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Rain intensity slider interaction
+      const slider = document.getElementById('rain-sim-slider');
+      const valLabel = document.getElementById('rain-sim-val');
+      const badge = document.getElementById('sim-badge');
+      const floodVal = document.getElementById('flood-depth-val');
+      const floodSummary = document.getElementById('flood-summary-text');
+      const floodGaugeArc = document.getElementById('flood-gauge-arc');
+      const riskBadge = document.getElementById('gauge-risk-badge');
+
+      if (slider && valLabel) {
+        slider.addEventListener('input', function (e) {
+          const val = parseInt(e.target.value, 10);
+          valLabel.textContent = val + ' mm/hr';
+
+          if (val < 30) {
+            badge.textContent = 'Normal Drainage';
+            badge.className = 'px-3 py-1.5 rounded-full bg-risk-low-bg text-risk-low font-label-sm text-label-sm font-bold shrink-0';
+            if (riskBadge) {
+              riskBadge.textContent = 'Low Risk';
+              riskBadge.className = 'px-3 py-1.5 rounded-full bg-risk-low-bg text-risk-low font-label-sm text-label-sm font-bold uppercase tracking-wide';
+            }
+            if (floodVal) floodVal.innerHTML = '8<span class="font-headline-sm text-headline-sm text-ink-muted">cm</span>';
+            if (floodSummary) floodSummary.innerHTML = 'Surface runoff safe: <strong>8cm depth</strong>';
+            if (floodGaugeArc) floodGaugeArc.setAttribute('d', 'M 20 80 A 60 60 0 0 1 50 45');
+          } else if (val < 70) {
+            badge.textContent = 'Moderate Runoff Alert';
+            badge.className = 'px-3 py-1.5 rounded-full bg-saffron-tint text-on-secondary-container font-label-sm text-label-sm font-bold shrink-0';
+            if (riskBadge) {
+              riskBadge.textContent = 'Moderate-High';
+              riskBadge.className = 'px-3 py-1.5 rounded-full bg-risk-high-bg text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wide';
+            }
+            if (floodVal) floodVal.innerHTML = '22<span class="font-headline-sm text-headline-sm text-ink-muted">cm</span>';
+            if (floodSummary) floodSummary.innerHTML = 'Peak water level: <strong>18cm - 25cm in 3h</strong>';
+            if (floodGaugeArc) floodGaugeArc.setAttribute('d', 'M 20 80 A 60 60 0 0 1 115 28');
+          } else {
+            badge.textContent = 'Severe Nala Overflow';
+            badge.className = 'px-3 py-1.5 rounded-full bg-risk-severe-bg text-risk-severe font-label-sm text-label-sm font-bold shrink-0';
+            if (riskBadge) {
+              riskBadge.textContent = 'Severe Alert';
+              riskBadge.className = 'px-3 py-1.5 rounded-full bg-risk-severe-bg text-risk-severe font-label-sm text-label-sm font-bold uppercase tracking-wide';
+            }
+            if (floodVal) floodVal.innerHTML = '48<span class="font-headline-sm text-headline-sm text-ink-muted">cm</span>';
+            if (floodSummary) floodSummary.innerHTML = 'Severe inundation: <strong>45cm - 55cm expected</strong>';
+            if (floodGaugeArc) floodGaugeArc.setAttribute('d', 'M 20 80 A 60 60 0 0 1 140 80');
+          }
+        });
+      }
+
+      // 2. Timeline Horizon Buttons
+      const timelineBtns = document.querySelectorAll('.timeline-btn');
+      timelineBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          timelineBtns.forEach(function (b) {
+            b.classList.remove('bg-primary', 'text-on-primary', 'font-semibold', 'shadow-sm');
+            b.classList.add('bg-transparent', 'text-ink-muted');
+          });
+          btn.classList.add('bg-primary', 'text-on-primary', 'font-semibold', 'shadow-sm');
+          btn.classList.remove('bg-transparent', 'text-ink-muted');
+        });
+      });
+
+      // 3. Language Selector Toggle
+      const langPills = document.querySelectorAll('.lang-pill');
+      langPills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+          langPills.forEach(function (p) {
+            p.classList.remove('bg-primary', 'text-on-primary', 'font-semibold', 'shadow-sm');
+            p.classList.add('bg-surface-white', 'text-on-surface');
+          });
+          pill.classList.remove('bg-surface-white', 'text-on-surface');
+          pill.classList.add('bg-primary', 'text-on-primary', 'font-semibold', 'shadow-sm');
+        });
+      });
+
+      // 4. Action Checklist Interactive Checkmarks
+      const checklistCards = document.querySelectorAll('.checklist-card');
+      checklistCards.forEach(function (card) {
+        card.addEventListener('click', function () {
+          const isChecked = card.getAttribute('data-checked') === 'true';
+          const newChecked = !isChecked;
+          card.setAttribute('data-checked', String(newChecked));
+
+          const icon = card.querySelector('.check-box span');
+          const box = card.querySelector('.check-box');
+          if (newChecked) {
+            if (icon) icon.classList.remove('opacity-0');
+            if (box) box.classList.add('bg-risk-low-bg', 'border-risk-low');
+            card.classList.add('bg-surface-cream/50');
+          } else {
+            if (icon) icon.classList.add('opacity-0');
+            if (box) box.classList.remove('bg-risk-low-bg', 'border-risk-low');
+            card.classList.remove('bg-surface-cream/50');
+          }
+        });
+      });
+
+      // "Mark All Done" button
+      const markAllBtn = document.getElementById('btn-mark-all-done');
+      if (markAllBtn) {
+        markAllBtn.addEventListener('click', function () {
+          checklistCards.forEach(function (card) {
+            card.setAttribute('data-checked', 'true');
+            const icon = card.querySelector('.check-box span');
+            const box = card.querySelector('.check-box');
+            if (icon) icon.classList.remove('opacity-0');
+            if (box) box.classList.add('bg-risk-low-bg', 'border-risk-low');
+            card.classList.add('bg-surface-cream/50');
+          });
+        });
+      }
+
+      // 5. Map Layer Toggles
+      const layerToggles = document.querySelectorAll('.layer-toggle');
+      layerToggles.forEach(function (toggle) {
+        toggle.addEventListener('click', function () {
+          const isActive = toggle.classList.contains('bg-teal-tint');
+          if (isActive) {
+            toggle.classList.remove('bg-teal-tint', 'text-primary', 'font-bold');
+            toggle.classList.add('bg-surface-sand', 'text-on-surface', 'font-medium');
+          } else {
+            toggle.classList.add('bg-teal-tint', 'text-primary', 'font-bold');
+            toggle.classList.remove('bg-surface-sand', 'text-on-surface', 'font-medium');
+          }
+        });
+      });
+
+      // 6. GPS locator button
+      const gpsBtn = document.getElementById('btn-use-gps');
+      const searchInput = document.getElementById('street-search-input');
+      if (gpsBtn && searchInput) {
+        gpsBtn.addEventListener('click', function () {
+          gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-primary animate-spin">sync</span><span>Locating...</span>';
+          setTimeout(function () {
+            searchInput.value = 'Current Location: 100ft Velachery Bypass (Ward 112)';
+            gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-risk-low">check</span><span>GPS Locked</span>';
+          }, 800);
+        });
+      }
+
+      // 7. "I'm Safe" micro-confirmation
+      const imSafeBtn = document.getElementById('btn-im-safe');
+      if (imSafeBtn) {
+        imSafeBtn.addEventListener('click', function () {
+          imSafeBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">done_all</span><span>Notified 3 Contacts</span>';
+          imSafeBtn.classList.remove('bg-risk-low-bg', 'text-risk-low');
+          imSafeBtn.classList.add('bg-risk-low', 'text-surface-white');
+        });
+      }
+
+      // 8. High Contrast Mode Toggle
+      const contrastBtn = document.getElementById('btn-toggle-contrast');
+      if (contrastBtn) {
+        let isContrast = false;
+        contrastBtn.addEventListener('click', function () {
+          isContrast = !isContrast;
+          if (isContrast) {
+            document.body.classList.add('contrast-125');
+            contrastBtn.classList.add('bg-primary', 'text-on-primary');
+          } else {
+            document.body.classList.remove('contrast-125');
+            contrastBtn.classList.remove('bg-primary', 'text-on-primary');
+          }
+        });
+      }
+
+      // 9. Audio Announcement Mock
+      const audioBtn = document.getElementById('btn-audio-listen');
+      if (audioBtn) {
+        audioBtn.addEventListener('click', function () {
+          const original = audioBtn.innerHTML;
+          audioBtn.innerHTML = '<span class="material-symbols-outlined text-secondary animate-spin">sync</span><span>Playing Local Tamil/Hindi Bulletin...</span>';
+          setTimeout(function () {
+            audioBtn.innerHTML = original;
+          }, 3500);
+        });
+      }
+
+      // 10. Submit Report Mock
+      const submitBtn = document.getElementById('btn-submit-report');
+      if (submitBtn) {
+        submitBtn.addEventListener('click', function () {
+          const observation = prompt('Enter your neighborhood observation (e.g., street water depth, power outage, tree fall):');
+          if (observation) {
+            alert('Thank you! Your report has been submitted to Ward 112 volunteers for verification.');
+          }
+        });
+      }
+    });
+  </script>
+
+
+</body></html>
