@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   SupportedLanguage,
   UserPersona,
@@ -70,6 +70,53 @@ export default function Home() {
   // Active Ward Details
   const activeWard = wardsData.find(w => w.properties.ward_id === selectedWardId) || wardsData[0];
   const activeProps = activeWard.properties;
+
+  // Approximate coordinate distance in km (Haversine Euclidean planar projection for Hyderabad)
+  const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const dLat = (lat2 - lat1) * 111.0;
+    const dLon = (lon2 - lon1) * 105.0;
+    return Math.round(Math.sqrt(dLat * dLat + dLon * dLon) * 100) / 100;
+  };
+
+  // Get active ward centroid coordinates
+  const wardCoords = activeWard.geometry?.coordinates?.[0] || [[78.42, 17.38]];
+  const activeWardLng = wardCoords.reduce((acc, c) => acc + c[0], 0) / wardCoords.length;
+  const activeWardLat = wardCoords.reduce((acc, c) => acc + c[1], 0) / wardCoords.length;
+
+  // Dynamically calculate real distance & walking time from active ward to every shelter
+  const dynamicShelters = useMemo(() => {
+    return shelters.map(s => {
+      const dist = calculateDistanceKm(activeWardLat, activeWardLng, s.lat, s.lng);
+      return {
+        ...s,
+        distance_km: dist,
+        walking_mins: Math.max(2, Math.round(dist * 12))
+      };
+    }).sort((a, b) => a.distance_km - b.distance_km);
+  }, [shelters, activeWardLat, activeWardLng]);
+
+  // Live synchronization with FastAPI backend if running
+  useEffect(() => {
+    const controller = new AbortController();
+    const syncBackend = async () => {
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:8000/api/v1/risk/wards?horizon=${horizon}&simulated_rain_mm=${rainfallRate}&simulated_temp_c=${temperatureC}`,
+          { signal: controller.signal }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            setWardsData(data.features);
+          }
+        }
+      } catch (e) {
+        // Standalone offline mode: client-side engine computes formulas dynamically
+      }
+    };
+    syncBackend();
+    return () => controller.abort();
+  }, [horizon, rainfallRate, temperatureC]);
 
   // Dynamically compute active risk levels based on simulation sliders and horizon
   const horizonMultiplier = horizon === '6h' ? 1.25 : horizon === '24h' ? 0.70 : horizon === '72h' ? 0.35 : 1.0;
@@ -198,18 +245,19 @@ export default function Home() {
       let msg = '';
       let speechLocale = 'en-IN';
 
+      const nearestShelterName = dynamicShelters[0]?.name || 'City Relief Centre';
       if (currentLang === 'te') {
         speechLocale = 'te-IN';
-        msg = `నిర్వాణ వాతావరణ హెచ్చరిక. ${activeProps.name} పరిధిలో వరద ముప్పు ఎక్కువగా ఉంది. నీటి మట్టం దాదాపు ${dynamicDepthCm} సెంటీమీటర్లు చేరే అవకాశం ఉంది. సమీప పునరావాస కేంద్రం ${shelters[0].name}.`;
+        msg = `నిర్వాణ వాతావరణ హెచ్చరిక. ${activeProps.name} పరిధిలో వరద ముప్పు ఎక్కువగా ఉంది. నీటి మట్టం దాదాపు ${dynamicDepthCm} సెంటీమీటర్లు చేరే అవకాశం ఉంది. సమీప పునరావాస కేంద్రం ${nearestShelterName}.`;
       } else if (currentLang === 'hi') {
         speechLocale = 'hi-IN';
-        msg = `निर्वाणा जलवायु चेतावनी। ${activeProps.name} में बाढ़ का जोखिम अधिक है। अनुमानित जलभराव ${dynamicDepthCm} सेंटीमीटर है। निकटतम आश्रय ${shelters[0].name} है।`;
+        msg = `निर्वाणा जलवायु चेतावनी। ${activeProps.name} में बाढ़ का जोखिम अधिक है। अनुमानित जलभराव ${dynamicDepthCm} सेंटीमीटर है। निकटतम आश्रय ${nearestShelterName} है।`;
       } else if (currentLang === 'ta') {
         speechLocale = 'ta-IN';
-        msg = `நிர்வாணா வானிலை எச்சரிக்கை. ${activeProps.name} பகுதியில் வெள்ள அபாயம் உள்ளது. எதிர்பார்க்கப்படும் நீர்மட்டம் ${dynamicDepthCm} சென்டிமீட்டர். அருகிலுள்ள முகாம் ${shelters[0].name}.`;
+        msg = `நிர்வாணா வானிலை எச்சரிக்கை. ${activeProps.name} பகுதியில் வெள்ள அபாயம் உள்ளது. எதிர்பார்க்கப்படும் நீர்மட்டம் ${dynamicDepthCm} சென்டிமீட்டர். அருகிலுள்ள முகாம் ${nearestShelterName}.`;
       } else {
         speechLocale = 'en-IN';
-        msg = `Nirvana Hyperlocal Climate Advisory for Hyderabad. Active alert in ${activeProps.name}. Estimated flood depth is ${dynamicDepthCm} centimeters. Nearest relief shelter is ${shelters[0].name}.`;
+        msg = `Nirvana Hyperlocal Climate Advisory for Hyderabad. Active alert in ${activeProps.name}. Estimated flood depth is ${dynamicDepthCm} centimeters. Nearest relief shelter is ${nearestShelterName}.`;
       }
 
       const utterance = new SpeechSynthesisUtterance(msg);
@@ -228,8 +276,8 @@ export default function Home() {
         wardName={activeProps.name}
         floodLevel={dynamicFloodLevel}
         depthCm={dynamicDepthCm}
-        nearestShelterName={shelters[0].name}
-        nearestShelterContact={shelters[0].contact}
+        nearestShelterName={dynamicShelters[0]?.name || 'City Relief Centre'}
+        nearestShelterContact={dynamicShelters[0]?.contact || '112'}
         currentLang={currentLang}
         onExitSimpleMode={() => setIsSimpleMode(false)}
       />
@@ -258,7 +306,7 @@ export default function Home() {
         <main className="w-full pt-32 pb-20 max-w-7xl mx-auto px-4 lg:px-8">
           <MunicipalCommand
             wards={wardsData}
-            shelters={shelters}
+            shelters={dynamicShelters}
             reports={reports}
             alerts={alerts}
             kpis={kpis}
@@ -457,15 +505,16 @@ export default function Home() {
             {/* EXPLAINER & SAFETY CHECKLIST GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
               <RiskExplainer
-                factors={activeProps.top_factors || [
-                  'Low basin natural elevation (498m)',
-                  'Blocked culvert inlet',
-                  'Heavy 55mm rain forecasted'
-                ]}
+                factors={activeProps.top_factors || []}
                 wardName={activeProps.name}
                 elevationM={activeProps.base_elevation_m}
                 drainageHealth={activeProps.drainage_health}
                 currentLang={currentLang}
+                rainfallRate={rainfallRate}
+                handM={activeProps.hand_m || 1.2}
+                twi={activeProps.twi || 11.5}
+                musiProximityKm={activeProps.musi_proximity_km || 1.6}
+                imperviousFraction={activeProps.impervious_fraction || 0.8}
               />
 
               <SafetyChecklist
@@ -486,7 +535,7 @@ export default function Home() {
             <div className="mb-12">
               <MapComponent
                 wards={wardsData}
-                shelters={shelters}
+                shelters={dynamicShelters}
                 reports={reports}
                 selectedWardId={selectedWardId}
                 onSelectWard={setSelectedWardId}
@@ -500,7 +549,7 @@ export default function Home() {
             {/* VERIFIED SHELTERS LOCATOR */}
             <div className="mb-12">
               <ShelterLocator
-                shelters={shelters}
+                shelters={dynamicShelters}
                 onCallShelter={(phone) => (window.location.href = `tel:${phone}`)}
                 currentLang={currentLang}
               />

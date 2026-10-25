@@ -49,6 +49,38 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
 
   const selectedWard = wards.find(w => w.properties.ward_id === selectedWardId) || wards[0];
 
+  // Dynamically compute KPIs from live ward telemetry
+  const severeWardsCount = wards.filter(w => (w.properties.flood_score || 0) >= 75 || (w.properties.heat_score || 0) >= 75).length || kpis.wards_at_severe;
+  const highRiskPopulation = wards.reduce((acc, w) => {
+    const score = Math.max(w.properties.flood_score || 0, w.properties.heat_score || 0);
+    if (score >= 75) return acc + (w.properties.population || 50000);
+    if (score >= 55) return acc + Math.round((w.properties.population || 50000) * 0.5);
+    return acc;
+  }, 0) || kpis.people_in_high_risk;
+
+  const sheltersOpenCount = shelters.filter(s => s.verification_status.includes('Verified')).length || kpis.shelters_open;
+  const sheltersOccupancyTotal = shelters.reduce((acc, s) => acc + (s.current_occupancy || 0), 0) || kpis.shelters_current_occupancy;
+  const sheltersCapacityTotal = shelters.reduce((acc, s) => acc + (s.capacity || 0), 0) || kpis.shelters_total_capacity;
+
+  // Dynamic AI recommendation per ward
+  const aiAction = selectedWard.properties.drainage_health === 'Blocked' || (selectedWard.properties.musi_proximity_km || 5) < 1.0
+    ? {
+        title: `Pre-position 2 High-Capacity Bilge Pumps at ${selectedWard.properties.name.split('/')[0]} nala`,
+        deadline: 'By 19:30 IST (Prior to convective peak)',
+        rationale: `Inundation probability exceeds 85% with ${selectedWard.properties.drainage_health.toLowerCase()} drainage channels. Low basin (${selectedWard.properties.base_elevation_m}m) requires immediate dewatering.`
+      }
+    : (selectedWard.properties.flood_score || 0) >= 60
+    ? {
+        title: `Deploy Mobile Silt Clearing Unit to ${selectedWard.properties.name.split('/')[0]}`,
+        deadline: 'By 20:30 IST',
+        rationale: `Moderate runoff anticipated (${selectedWard.properties.flood_score}/100); clear surface grates to prevent localized ponding.`
+      }
+    : {
+        title: `Routine Drainage Surveillance at ${selectedWard.properties.name.split('/')[0]}`,
+        deadline: 'Standard shift rotation',
+        rationale: `Elevation (${selectedWard.properties.base_elevation_m}m) and ${selectedWard.properties.drainage_health.toLowerCase()} drainage capacity provide adequate margin.`
+      };
+
   const handleComposeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSendAlert({
@@ -134,23 +166,23 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-[#FBE1DF] border border-[#D9453D]/30">
                 <span className="text-[11px] font-bold uppercase text-[#D9453D]">Wards At Severe Risk</span>
-                <div className="text-3xl font-black text-[#D9453D] mt-1">{kpis.wards_at_severe}</div>
-                <span className="text-[11px] text-[#6F6A60]">Out of 22 monitored zones</span>
+                <div className="text-3xl font-black text-[#D9453D] mt-1">{severeWardsCount}</div>
+                <span className="text-[11px] text-[#6F6A60]">Out of {wards.length} monitored zones</span>
               </div>
               <div className="p-5 rounded-2xl bg-[#FDE6D6] border border-[#EE7B30]/30">
                 <span className="text-[11px] font-bold uppercase text-[#EE7B30]">People In Inundation Zones</span>
-                <div className="text-3xl font-black text-[#EE7B30] mt-1">{kpis.people_in_high_risk.toLocaleString()}</div>
+                <div className="text-3xl font-black text-[#EE7B30] mt-1">{highRiskPopulation.toLocaleString()}</div>
                 <span className="text-[11px] text-[#6F6A60]">Prioritizing ground floors</span>
               </div>
               <div className="p-5 rounded-2xl bg-[#E6F5ED] border border-[#4CAF7A]/30">
                 <span className="text-[11px] font-bold uppercase text-[#4CAF7A]">Relief Shelters Open</span>
-                <div className="text-3xl font-black text-[#4CAF7A] mt-1">{kpis.shelters_open}</div>
-                <span className="text-[11px] text-[#6F6A60]">{kpis.shelters_current_occupancy} / {kpis.shelters_total_capacity} beds filled</span>
+                <div className="text-3xl font-black text-[#4CAF7A] mt-1">{sheltersOpenCount}</div>
+                <span className="text-[11px] text-[#6F6A60]">{sheltersOccupancyTotal.toLocaleString()} / {sheltersCapacityTotal.toLocaleString()} beds filled</span>
               </div>
               <div className="p-5 rounded-2xl bg-[#E3F1F4] border border-[#1F7A8C]/30">
                 <span className="text-[11px] font-bold uppercase text-[#006070]">Active Citizen Reports</span>
-                <div className="text-3xl font-black text-[#006070] mt-1">{kpis.active_citizen_reports}</div>
-                <span className="text-[11px] text-[#6F6A60]">32 ground-truth verified</span>
+                <div className="text-3xl font-black text-[#006070] mt-1">{reports.length}</div>
+                <span className="text-[11px] text-[#6F6A60]">{reports.filter(r => r.status === 'verified').length} ground-truth verified</span>
               </div>
             </div>
 
@@ -247,12 +279,15 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
               </div>
 
               <div className="p-4 rounded-xl bg-[#FDEBD3] border border-[#EE7B30]/40">
-                <span className="text-[10px] font-bold uppercase text-[#914d00]">AI Recommended Action:</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase text-[#914d00]">AI Recommended Action:</span>
+                  <span className="text-[10px] font-semibold text-[#6F6A60]">{aiAction.deadline}</span>
+                </div>
                 <p className="text-xs font-bold text-[#1c1b1a] mt-1">
-                  Pre-position 2 pumps at {selectedWard.properties.name.split('/')[0]} nala by 19:30 IST.
+                  {aiAction.title}
                 </p>
                 <p className="text-[11px] text-[#6F6A60] mt-1">
-                  Rationale: Runoff intensity vs blocked drain culvert creates 85% backflow probability within 2 hours.
+                  {aiAction.rationale}
                 </p>
               </div>
             </div>

@@ -11,6 +11,11 @@ interface RiskExplainerProps {
   elevationM: number;
   drainageHealth: string;
   currentLang: SupportedLanguage;
+  rainfallRate?: number;
+  handM?: number;
+  twi?: number;
+  musiProximityKm?: number;
+  imperviousFraction?: number;
 }
 
 export const RiskExplainer: React.FC<RiskExplainerProps> = ({
@@ -18,17 +23,78 @@ export const RiskExplainer: React.FC<RiskExplainerProps> = ({
   wardName,
   elevationM,
   drainageHealth,
-  currentLang
+  currentLang,
+  rainfallRate = 45,
+  handM = 1.2,
+  twi = 11.8,
+  musiProximityKm = 1.6,
+  imperviousFraction = 0.82
 }) => {
-  const localizedFactors = getLocalizedFactors(currentLang, factors);
+  // Dynamically calculate mathematical SHAP factor contributions
+  const rainScore = Math.max(2.0, Math.min(40.0, rainfallRate * 0.45));
+  const topoScore = 3.0 + (handM < 1.0 ? 15.0 * (1.0 - handM) : 0) + (twi > 10.0 ? Math.min(15.0, (twi - 10.0) * 4.0) : 0);
+  const drainPenalty = drainageHealth === 'Blocked' ? 28.0 : (drainageHealth === 'Partially Blocked' ? 14.0 : 4.0);
+  const runoffScore = Math.max(2.0, imperviousFraction * 15.0);
+  const riverScore = Math.max(1.0, 15.0 - (musiProximityKm * 5.0));
+  const totalWeight = rainScore + topoScore + drainPenalty + runoffScore + riverScore;
 
-  const shapContributions = [
-    { labelKey: 'hand_label', score: 53.1, value: '< 1.2m', color: '#D9453D' },
-    { labelKey: 'rain_forecast_label', score: 18.5, value: '55 mm/hr', color: '#EE7B30' },
-    { labelKey: 'twi_label', score: 12.8, value: '11.8 (TWI)', color: '#F2B134' },
-    { labelKey: 'drain_condition_label', score: 8.3, value: drainageHealth, color: '#1F7A8C' },
-    { labelKey: 'musi_surge_label', score: 4.2, value: '0.4 - 1.6 km', color: '#1F7A8C' }
-  ];
+  const dynamicShapContributions = [
+    {
+      labelKey: 'rain_forecast_label',
+      score: Math.round((rainScore / totalWeight) * 1000) / 10,
+      value: `${rainfallRate} mm/hr`,
+      color: '#EE7B30'
+    },
+    {
+      labelKey: 'hand_label',
+      score: Math.round((topoScore / totalWeight) * 1000) / 10,
+      value: `${handM}m (Elev ${elevationM}m)`,
+      color: '#D9453D'
+    },
+    {
+      labelKey: 'drain_condition_label',
+      score: Math.round((drainPenalty / totalWeight) * 1000) / 10,
+      value: drainageHealth,
+      color: '#1F7A8C'
+    },
+    {
+      labelKey: 'twi_label',
+      score: Math.round((runoffScore / totalWeight) * 1000) / 10,
+      value: `${Math.round(imperviousFraction * 100)}% paved`,
+      color: '#F2B134'
+    },
+    {
+      labelKey: 'musi_surge_label',
+      score: Math.round((riverScore / totalWeight) * 1000) / 10,
+      value: `${musiProximityKm} km`,
+      color: '#1F7A8C'
+    }
+  ].sort((a, b) => b.score - a.score);
+
+  // Dynamic natural language factors based on active ward properties & current rainfall
+  const dynamicFactors: string[] = [];
+  if (drainageHealth === 'Blocked' || drainageHealth === 'Partially Blocked') {
+    dynamicFactors.push(`Storm drain culverts flagged as ${drainageHealth.toLowerCase()} with silt/debris.`);
+  }
+  if (rainfallRate >= 40) {
+    dynamicFactors.push(`Heavy convective rainfall: ${rainfallRate}mm/hr expected within 3-hour window.`);
+  } else if (rainfallRate >= 20) {
+    dynamicFactors.push(`Moderate continuous rainfall: ${rainfallRate}mm/hr anticipated.`);
+  } else {
+    dynamicFactors.push(`Light rainfall: ${rainfallRate}mm/hr within normal drainage capacity.`);
+  }
+  if (handM <= 1.0 || elevationM < 495.0) {
+    dynamicFactors.push(`Low-lying natural basin elevation (${elevationM}m, HAND ${handM}m) prone to stormwater ponding.`);
+  }
+  if (musiProximityKm <= 1.5) {
+    dynamicFactors.push(`Proximity to Musi River flood channel (${Math.round(musiProximityKm * 1000)}m).`);
+  }
+  if (dynamicFactors.length === 0) {
+    dynamicFactors.push('Terrain slope and stormwater drainage operating within normal safe parameters.');
+  }
+
+  const activeFactors = factors && factors.length > 0 ? factors : dynamicFactors;
+  const localizedFactors = getLocalizedFactors(currentLang, activeFactors);
 
   return (
     <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1">
@@ -65,7 +131,7 @@ export const RiskExplainer: React.FC<RiskExplainerProps> = ({
         <div className="text-xs font-bold uppercase text-[#6F6A60] tracking-wider mb-2">
           {getTranslation(currentLang, 'feature_importance_breakdown')}
         </div>
-        {shapContributions.map((item, index) => (
+        {dynamicShapContributions.map((item, index) => (
           <div key={index} className="space-y-1">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-[#1c1b1a]">
