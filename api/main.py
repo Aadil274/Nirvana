@@ -15,7 +15,7 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from api.routes import system, risk, forecast, alerts, shelters, reports, guidance, auth_subs, dashboard, simulation
+from api.routes import system, risk, forecast, alerts, shelters, reports, guidance, auth, auth_subs, dashboard, simulation
 
 app = FastAPI(
     title="Nirvana Civic Climate Resilience API",
@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 # Register versioned routers under /api/v1
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(risk.router, prefix="/api/v1")
 app.include_router(forecast.router, prefix="/api/v1")
