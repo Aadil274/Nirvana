@@ -71,16 +71,17 @@ export default function Home() {
   const activeWard = wardsData.find(w => w.properties.ward_id === selectedWardId) || wardsData[0];
   const activeProps = activeWard.properties;
 
-  // Dynamically compute active risk levels based on simulation sliders
-  const dynamicFloodScore = Math.min(100, Math.round(
-    (activeProps.flood_score || 70) * (rainfallRate / 45) * (horizon === '6h' ? 1.2 : horizon === '24h' ? 0.8 : 1.0)
-  ));
+  // Dynamically compute active risk levels based on simulation sliders and horizon
+  const horizonMultiplier = horizon === '6h' ? 1.25 : horizon === '24h' ? 0.70 : horizon === '72h' ? 0.35 : 1.0;
+  const dynamicFloodScore = Math.min(100, Math.max(5, Math.round(
+    (activeProps.flood_score || 70) * (rainfallRate / 45) * horizonMultiplier
+  )));
   const dynamicFloodLevel: RiskLevel = dynamicFloodScore >= 75 ? 'Severe' : dynamicFloodScore >= 55 ? 'High' : dynamicFloodScore >= 35 ? 'Moderate' : 'Low';
   const dynamicDepthCm = Math.round((dynamicFloodScore / 100) * 45);
 
-  const dynamicHeatScore = Math.min(100, Math.round(
+  const dynamicHeatScore = Math.min(100, Math.max(5, Math.round(
     (activeProps.heat_score || 40) * (temperatureC / 34)
-  ));
+  )));
   const dynamicHeatLevel: RiskLevel = dynamicHeatScore >= 75 ? 'Severe' : dynamicHeatScore >= 55 ? 'High' : dynamicHeatScore >= 35 ? 'Moderate' : 'Low';
 
   // Scripted Demo Scenario: Heavy Rain in Hyderabad

@@ -82,7 +82,7 @@ def submit_shelter(payload: ShelterSubmission):
     new_id = f"shelter-{uuid.uuid4().hex[:6]}"
     obj = {
         "id": new_id,
-        "name": payload.string_name,
+        "name": payload.name,
         "ward_id": payload.ward_id,
         "ward_name": payload.ward_name,
         "type": payload.type,

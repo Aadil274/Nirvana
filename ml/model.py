@@ -102,6 +102,64 @@ class FloodRiskEngine:
 
         return factors[:3]
 
+    @staticmethod
+    def explain_contributions(features: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Calculates exact mathematical factor attribution percentages (SHAP proxy).
+        """
+        rain_1h = float(features.get("rain_1h_mm", 0.0))
+        rain_3h = float(features.get("rain_3h_mm", 0.0))
+        elevation = float(features.get("elevation_m", 500.0))
+        twi = float(features.get("twi", 10.0))
+        hand = float(features.get("hand_m", 2.0))
+        drain_health = features.get("drainage_health", "Clear")
+        impervious = float(features.get("impervious_fraction", 0.8))
+        musi_dist = float(features.get("musi_proximity_km", 5.0))
+
+        drain_penalty = 28.0 if drain_health == "Blocked" else (14.0 if drain_health == "Partially Blocked" else 4.0)
+        rain_score = max(2.0, min(40.0, (rain_1h * 0.4) + (rain_3h * 0.35)))
+        
+        topo_score = 3.0
+        if hand < 1.0:
+            topo_score += 15.0 * (1.0 - hand)
+        if twi > 10.0:
+            topo_score += min(15.0, (twi - 10.0) * 4.0)
+
+        river_score = max(1.0, 15.0 - (musi_dist * 5.0))
+        runoff_score = max(2.0, impervious * 15.0)
+
+        total_weight = rain_score + topo_score + river_score + runoff_score + drain_penalty
+
+        factors = [
+            {
+                "factor": "Height Above Drainage (HAND)",
+                "contribution_pct": round((topo_score / total_weight) * 100, 1),
+                "value": f"{hand:.1f}m (Elev {elevation:.0f}m)"
+            },
+            {
+                "factor": "3-Hour Rainfall Forecast",
+                "contribution_pct": round((rain_score / total_weight) * 100, 1),
+                "value": f"{rain_3h:.0f}mm/hr"
+            },
+            {
+                "factor": "Drainage Condition & Silt",
+                "contribution_pct": round((drain_penalty / total_weight) * 100, 1),
+                "value": drain_health
+            },
+            {
+                "factor": "Impervious Surface Runoff",
+                "contribution_pct": round((runoff_score / total_weight) * 100, 1),
+                "value": f"{int(impervious * 100)}% paved"
+            },
+            {
+                "factor": "Musi River Channel Proximity",
+                "contribution_pct": round((river_score / total_weight) * 100, 1),
+                "value": f"{musi_dist:.1f}km"
+            }
+        ]
+        factors.sort(key=lambda x: x["contribution_pct"], reverse=True)
+        return factors
+
 
 class HeatRiskEngine:
     """

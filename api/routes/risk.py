@@ -16,6 +16,64 @@ def load_wards_geojson():
     with open(WARDS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def compute_ward_risk(props: dict, horizon: str = "now", simulated_rain_mm: Optional[float] = None, simulated_temp_c: Optional[float] = None) -> dict:
+    """
+    Dynamically computes flood & heat risk scores, depth, level, confidence, and explainability factors
+    for a given ward based on physical topography and weather parameters.
+    """
+    rain_3h = simulated_rain_mm if simulated_rain_mm is not None else (
+        55.0 if props["ward_id"] in ["ward-72", "ward-71", "ward-55"] else 22.0
+    )
+    if horizon == "6h":
+        rain_3h *= 1.25
+    elif horizon == "24h":
+        rain_3h *= 0.65
+    elif horizon == "72h":
+        rain_3h *= 0.30
+
+    temp_c = simulated_temp_c if simulated_temp_c is not None else (
+        41.5 if props["ward_id"] == "ward-48" else 35.0
+    )
+
+    flood_features = {
+        "rain_1h_mm": rain_3h * 0.45,
+        "rain_3h_mm": rain_3h,
+        "elevation_m": props["base_elevation_m"],
+        "twi": props["twi"],
+        "hand_m": props["hand_m"],
+        "drainage_health": props["drainage_health"],
+        "impervious_fraction": props["impervious_fraction"],
+        "musi_proximity_km": props["musi_proximity_km"],
+        "lake_overflow_risk": props["lake_overflow_risk"]
+    }
+
+    f_score, f_level, f_depth, f_conf = FloodRiskEngine.calculate_baseline(flood_features)
+    factors = FloodRiskEngine.explain_factors(flood_features)
+    contributions = FloodRiskEngine.explain_contributions(flood_features)
+
+    heat_features = {
+        "temp_c": temp_c,
+        "humidity_pct": 58.0 if rain_3h > 20 else 42.0,
+        "impervious_fraction": props["impervious_fraction"],
+        "outdoor_workers_pct": props["outdoor_workers_pct"],
+        "elderly_pct": props["elderly_pct"]
+    }
+    h_score, h_level, _, heat_idx, heat_factors = HeatRiskEngine.calculate_heat_risk(heat_features)
+
+    updated_props = dict(props)
+    updated_props["flood_score"] = f_score
+    updated_props["flood_level"] = f_level
+    updated_props["flood_depth_cm"] = f_depth
+    updated_props["heat_score"] = h_score
+    updated_props["heat_level"] = h_level
+    updated_props["heat_temp_c"] = temp_c
+    updated_props["heat_index_c"] = heat_idx
+    updated_props["confidence"] = f_conf
+    updated_props["top_factors"] = factors
+    updated_props["heat_factors"] = heat_factors
+    updated_props["contributions"] = contributions
+    return updated_props
+
 @router.get("/wards")
 def get_all_wards_risk(
     horizon: str = Query("now", pattern="^(now|6h|24h|72h)$"),
@@ -33,58 +91,7 @@ def get_all_wards_risk(
 
     results = []
     for feat in features:
-        props = feat["properties"].copy()
-
-        # Apply simulation or horizon modifiers
-        rain_3h = simulated_rain_mm if simulated_rain_mm is not None else (
-            55.0 if props["ward_id"] in ["ward-72", "ward-71", "ward-55"] else 22.0
-        )
-        if horizon == "6h":
-            rain_3h *= 1.25
-        elif horizon == "24h":
-            rain_3h *= 0.65
-        elif horizon == "72h":
-            rain_3h *= 0.30
-
-        temp_c = simulated_temp_c if simulated_temp_c is not None else (
-            41.5 if props["ward_id"] == "ward-48" else 35.0
-        )
-
-        flood_features = {
-            "rain_1h_mm": rain_3h * 0.45,
-            "rain_3h_mm": rain_3h,
-            "elevation_m": props["base_elevation_m"],
-            "twi": props["twi"],
-            "hand_m": props["hand_m"],
-            "drainage_health": props["drainage_health"],
-            "impervious_fraction": props["impervious_fraction"],
-            "musi_proximity_km": props["musi_proximity_km"],
-            "lake_overflow_risk": props["lake_overflow_risk"]
-        }
-
-        f_score, f_level, f_depth, f_conf = FloodRiskEngine.calculate_baseline(flood_features)
-        factors = FloodRiskEngine.explain_factors(flood_features)
-
-        heat_features = {
-            "temp_c": temp_c,
-            "humidity_pct": 58.0 if rain_3h > 20 else 42.0,
-            "impervious_fraction": props["impervious_fraction"],
-            "outdoor_workers_pct": props["outdoor_workers_pct"],
-            "elderly_pct": props["elderly_pct"]
-        }
-        h_score, h_level, _, heat_idx, heat_factors = HeatRiskEngine.calculate_heat_risk(heat_features)
-
-        props["flood_score"] = f_score
-        props["flood_level"] = f_level
-        props["flood_depth_cm"] = f_depth
-        props["heat_score"] = h_score
-        props["heat_level"] = h_level
-        props["heat_temp_c"] = temp_c
-        props["heat_index_c"] = heat_idx
-        props["confidence"] = f_conf
-        props["top_factors"] = factors
-        props["heat_factors"] = heat_factors
-
+        props = compute_ward_risk(feat["properties"], horizon=horizon, simulated_rain_mm=simulated_rain_mm, simulated_temp_c=simulated_temp_c)
         results.append({
             "type": "Feature",
             "id": feat["id"],
@@ -106,7 +113,7 @@ def get_risk_at_location(
     horizon: str = Query("now", pattern="^(now|6h|24h|72h)$")
 ):
     """
-    Finds nearest ward/cell to given coordinates and returns real-time risk scores.
+    Finds nearest ward/cell to given coordinates and dynamically calculates real-time risk scores.
     """
     data = load_wards_geojson()
     best_ward = None
@@ -114,7 +121,6 @@ def get_risk_at_location(
 
     for feat in data["features"]:
         coords = feat["geometry"]["coordinates"][0]
-        # Approximate centroid
         centroid_lng = sum(p[0] for p in coords) / len(coords)
         centroid_lat = sum(p[1] for p in coords) / len(coords)
         dist = ((lat - centroid_lat) ** 2 + (lng - centroid_lng) ** 2) ** 0.5
@@ -125,53 +131,48 @@ def get_risk_at_location(
     if not best_ward:
         raise HTTPException(status_code=404, detail="Coordinates outside pilot coverage (Hyderabad)")
 
-    props = best_ward["properties"]
+    computed = compute_ward_risk(best_ward["properties"], horizon=horizon)
     return {
-        "ward_id": props["ward_id"],
-        "ward_name": props["name"],
+        "ward_id": computed["ward_id"],
+        "ward_name": computed["name"],
         "lat": lat,
         "lng": lng,
         "horizon": horizon,
         "flood": {
-            "score": props.get("flood_score", 84),
-            "level": props.get("flood_level", "Severe"),
-            "expected_depth_cm": props.get("flood_depth_cm", 28),
-            "factors": props.get("top_factors", ["Shah Hatim culvert inlet choked", "Low basin depression"])
+            "score": computed["flood_score"],
+            "level": computed["flood_level"],
+            "expected_depth_cm": computed["flood_depth_cm"],
+            "factors": computed["top_factors"]
         },
         "heat": {
-            "score": props.get("heat_score", 42),
-            "level": props.get("heat_level", "Moderate"),
-            "temp_c": 35.0,
-            "heat_index_c": 39.5
+            "score": computed["heat_score"],
+            "level": computed["heat_level"],
+            "temp_c": computed["heat_temp_c"],
+            "heat_index_c": computed["heat_index_c"],
+            "factors": computed["heat_factors"]
         },
-        "confidence": 94,
-        "advisory": "Advisory only. Check official IMD alerts."
+        "confidence": computed["confidence"],
+        "advisory": "Advisory only. Complements official IMD / NDMA warnings."
     }
 
 @router.get("/explain")
 def explain_risk(cell_id: str = Query(...)):
     """
-    Returns SHAP / rule feature decomposition and attribution for a specific ward or grid cell.
+    Returns mathematically calculated SHAP / rule feature decomposition for a specific ward or grid cell.
     """
     data = load_wards_geojson()
     matched = next((f for f in data["features"] if f["id"] == cell_id or f["properties"]["ward_id"] == cell_id), None)
     if not matched:
         raise HTTPException(status_code=404, detail=f"Cell/Ward {cell_id} not found")
 
-    props = matched["properties"]
+    computed = compute_ward_risk(matched["properties"])
     return {
-        "ward_id": props["ward_id"],
-        "name": props["name"],
+        "ward_id": computed["ward_id"],
+        "name": computed["name"],
         "explainability": {
-            "summary": f"Risk elevated due to {props['drainage_health'].lower()} drainage in low basin ({props['base_elevation_m']}m).",
-            "top_contributing_factors": [
-                {"factor": "Height Above Drainage (HAND)", "contribution_pct": 53.1, "value": f"{props['hand_m']}m"},
-                {"factor": "3-Hour Rainfall Forecast", "contribution_pct": 18.5, "value": "55mm/hr"},
-                {"factor": "Topographic Wetness Index (TWI)", "contribution_pct": 12.8, "value": f"{props['twi']}"},
-                {"factor": "Drainage Condition", "contribution_pct": 8.3, "value": props["drainage_health"]},
-                {"factor": "Musi River Proximity", "contribution_pct": 4.2, "value": f"{props['musi_proximity_km']}km"}
-            ],
-            "confidence": 94,
+            "summary": f"Calculated flood risk score {computed['flood_score']}/100 ({computed['flood_level']}) due to {computed['drainage_health'].lower()} drainage in low basin ({computed['base_elevation_m']}m).",
+            "top_contributing_factors": computed["contributions"],
+            "confidence": computed["confidence"],
             "last_updated": "2026-10-25T18:10:00Z"
         }
     }
@@ -179,21 +180,25 @@ def explain_risk(cell_id: str = Query(...)):
 @router.get("/{ward_id}")
 def get_ward_risk_by_id(ward_id: str, horizon: str = Query("now", pattern="^(now|6h|24h|72h)$")):
     """
-    Returns specific ward risk scores, flood depth cm, heat index, and factors.
+    Returns dynamically computed ward risk scores, flood depth cm, heat index, and factors.
     """
     data = load_wards_geojson()
     matched = next((f for f in data["features"] if f.get("id") == ward_id or f["properties"].get("ward_id") == ward_id), None)
     if not matched:
         raise HTTPException(status_code=404, detail=f"Ward {ward_id} not found")
-    props = matched["properties"]
+    
+    computed = compute_ward_risk(matched["properties"], horizon=horizon)
     return {
-        "ward_id": props["ward_id"],
-        "name": props["name"],
+        "ward_id": computed["ward_id"],
+        "name": computed["name"],
         "horizon": horizon,
-        "flood_score": props.get("flood_score", 84),
-        "flood_depth_cm": props.get("flood_depth_cm", 28),
-        "heat_score": props.get("heat_score", 42),
-        "heat_index_c": 39.5,
-        "top_factors": props.get("top_factors", ["Shah Hatim culvert inlet choked", "Low basin depression"])
+        "flood_score": computed["flood_score"],
+        "flood_level": computed["flood_level"],
+        "flood_depth_cm": computed["flood_depth_cm"],
+        "heat_score": computed["heat_score"],
+        "heat_level": computed["heat_level"],
+        "heat_index_c": computed["heat_index_c"],
+        "confidence": computed["confidence"],
+        "top_factors": computed["top_factors"]
     }
 

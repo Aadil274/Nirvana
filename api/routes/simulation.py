@@ -20,40 +20,61 @@ CURRENT_SCENARIO = {
 def run_what_if_simulation(payload: WhatIfSimulationRequest):
     """
     Simulates projected street-level flood and heat risk based on user-controlled sliders.
+    Dynamically computes impacts across all 22 wards from real spatial data.
     """
+    from .risk import load_wards_geojson, compute_ward_risk
+
     rain = payload.rainfall_rate_mm_hr
     temp = payload.temperature_c
+    blockage = payload.drainage_blockage_pct
 
-    # Dynamic impact calculations
-    if rain >= 80:
-        severe_count = 14
-        affected_pop = 780000
+    wards_data = load_wards_geojson()
+    severe_count = 0
+    high_count = 0
+    affected_pop = 0
+
+    for feat in wards_data.get("features", []):
+        props = dict(feat["properties"])
+        # Adjust drainage health if user increased blockage
+        if blockage >= 60:
+            props["drainage_health"] = "Blocked"
+        elif blockage >= 30 and props["drainage_health"] == "Clear":
+            props["drainage_health"] = "Partially Blocked"
+
+        computed = compute_ward_risk(props, horizon="now", simulated_rain_mm=rain, simulated_temp_c=temp)
+        f_score = computed["flood_score"]
+        h_score = computed["heat_score"]
+        pop = props.get("population", 50000)
+
+        if f_score >= 75 or h_score >= 75:
+            severe_count += 1
+            affected_pop += pop
+        elif f_score >= 55 or h_score >= 55:
+            high_count += 1
+            affected_pop += int(pop * 0.5)
+
+    if severe_count >= 5:
         overall_severity = "Severe"
-    elif rain >= 50:
-        severe_count = 6
-        affected_pop = 340000
+    elif severe_count >= 2 or high_count >= 6:
         overall_severity = "High"
-    elif rain >= 25:
-        severe_count = 2
-        affected_pop = 95000
+    elif high_count >= 2:
         overall_severity = "Moderate"
     else:
-        severe_count = 0
-        affected_pop = 15000
         overall_severity = "Low"
 
     return {
         "simulation_inputs": {
             "rainfall_rate_mm_hr": rain,
             "temperature_c": temp,
-            "drainage_blockage_pct": payload.drainage_blockage_pct
+            "drainage_blockage_pct": blockage
         },
         "projected_impact": {
             "overall_severity": overall_severity,
             "wards_at_severe": severe_count,
+            "wards_at_high": high_count,
             "people_at_risk": affected_pop,
-            "recommended_pumps": max(4, int(severe_count * 1.5)),
-            "shelters_to_activate": max(3, severe_count * 2)
+            "recommended_pumps": max(2, int(severe_count * 2 + high_count)),
+            "shelters_to_activate": max(2, int(severe_count * 2.5 + 1))
         }
     }
 

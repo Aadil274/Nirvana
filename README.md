@@ -1,4 +1,4 @@
-# Nirvana (formerly NeighbourWatch)
+# Nirvana: Hyperlocal Climate Risk Alerts for Vulnerable Urban Communities
 ### Hyperlocal Climate Risk Alerts for Vulnerable Urban Communities
 
 Nirvana is an AI-assisted, street-level flood and heat resilience platform designed for vulnerable urban populations in India. By fusing high-resolution Doppler radar, digital elevation models (SRTM/Copernicus), municipal drainage topologies, and verified crowd-sourced citizen ground-truth, Nirvana estimates neighborhood-level flood inundation depth and wet-bulb heat stress.

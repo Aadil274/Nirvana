@@ -46,6 +46,15 @@ app.include_router(auth_subs.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(simulation.router, prefix="/api/v1")
 
+# Also provide root aliases for standard container / balancer health checks
+@app.get("/health", tags=["System"])
+def root_health():
+    return system.health_check()
+
+@app.get("/data-sources/status", tags=["System"])
+def root_data_sources():
+    return system.data_sources_status()
+
 # WebSocket connection manager for live telemetry
 class TelemetryConnectionManager:
     def __init__(self):
