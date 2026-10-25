@@ -56,6 +56,8 @@ export default function Home() {
   // Selected Location & Simulation
   const [selectedWardId, setSelectedWardId] = useState<string>('ward-72');
   const [searchQuery, setSearchQuery] = useState('');
+  const [userGpsCoords, setUserGpsCoords] = useState<{ lat: number; lng: number; accuracy: number; label: string } | null>(null);
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
   const [rainfallRate, setRainfallRate] = useState<number>(45);
   const [temperatureC, setTemperatureC] = useState<number>(34);
   const [isScenarioActive, setIsScenarioActive] = useState(false);
@@ -239,6 +241,159 @@ export default function Home() {
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Real Dynamic Browser Geolocation (GPS)
+  const handleUseRealGps = () => {
+    if (!('geolocation' in navigator)) {
+      alert('Geolocation is not supported in your browser.');
+      return;
+    }
+
+    setIsLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        setIsLocatingGps(false);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = Math.round(pos.coords.accuracy);
+
+        // Find nearest ward among all wards in Hyderabad
+        let nearestWard = wardsData[0];
+        let minDistance = Infinity;
+
+        wardsData.forEach(w => {
+          const coords = w.geometry?.coordinates?.[0] || [[78.42, 17.38]];
+          const cLng = coords.reduce((acc, p) => acc + p[0], 0) / coords.length;
+          const cLat = coords.reduce((acc, p) => acc + p[1], 0) / coords.length;
+          const d = Math.sqrt(((lat - cLat) * 111.0) ** 2 + ((lng - cLng) * 105.0) ** 2);
+          if (d < minDistance) {
+            minDistance = d;
+            nearestWard = w;
+          }
+        });
+
+        setSelectedWardId(nearestWard.properties.ward_id);
+        const gpsLabel = `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (±${accuracy}m)`;
+        setUserGpsCoords({ lat, lng, accuracy, label: gpsLabel });
+        setSearchQuery(`${nearestWard.properties.name} [GPS: ${lat.toFixed(3)}°, ${lng.toFixed(3)}°]`);
+
+        // Query backend API for live coordinate-specific risk calculation
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/api/v1/risk?lat=${lat}&lng=${lng}`);
+          if (res.ok) {
+            const liveData = await res.json();
+            console.log('Live coordinate risk:', liveData);
+          }
+        } catch (e) {
+          // offline mode
+        }
+
+        const el = document.getElementById('monitor-section');
+        el?.scrollIntoView({ behavior: 'smooth' });
+      },
+      (err) => {
+        setIsLocatingGps(false);
+        alert(`Location access denied or timed out: ${err.message}. Please allow location access or type your locality in the search bar.`);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  };
+
+  // Dynamic Locality & Geocoding Search Resolver
+  const handleSearchLocation = async (query: string) => {
+    if (!query.trim()) return;
+
+    // 1. Direct match in local wards database
+    const directMatch = wardsData.find(w =>
+      w.properties.name.toLowerCase().includes(query.toLowerCase()) ||
+      w.properties.circle.toLowerCase().includes(query.toLowerCase()) ||
+      w.properties.zone.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (directMatch) {
+      handleSelectSearchedWard(directMatch.properties.ward_id);
+      return;
+    }
+
+    // 2. Comprehensive Hyderabad localities directory
+    const hyderabadLocalities: Record<string, { lat: number; lng: number; wardId: string; name: string }> = {
+      'tolichowki': { lat: 17.4014, lng: 78.4118, wardId: 'ward-71', name: 'Karwan / Tolichowki' },
+      'mehdipatnam': { lat: 17.3916, lng: 78.4402, wardId: 'ward-72', name: 'Mehdipatnam / Nadeem Colony' },
+      'nadeem colony': { lat: 17.3820, lng: 78.4230, wardId: 'ward-72', name: 'Mehdipatnam / Nadeem Colony' },
+      'charminar': { lat: 17.3616, lng: 78.4747, wardId: 'ward-48', name: 'Charminar / Ghansi Bazaar' },
+      'old city': { lat: 17.3616, lng: 78.4747, wardId: 'ward-48', name: 'Charminar / Ghansi Bazaar' },
+      'moosarambagh': { lat: 17.3730, lng: 78.5095, wardId: 'ward-55', name: 'Malakpet / Moosarambagh' },
+      'malakpet': { lat: 17.3750, lng: 78.4980, wardId: 'ward-55', name: 'Malakpet / Moosarambagh' },
+      'begumpet': { lat: 17.4440, lng: 78.4680, wardId: 'ward-8', name: 'Begumpet / Prakash Nagar' },
+      'amberpet': { lat: 17.3980, lng: 78.5150, wardId: 'ward-62', name: 'Amberpet / Ali Cafe' },
+      'chandrayangutta': { lat: 17.3200, lng: 78.4800, wardId: 'ward-44', name: 'Chandrayangutta / Al Jubail' },
+      'al jubail': { lat: 17.3200, lng: 78.4800, wardId: 'ward-44', name: 'Chandrayangutta / Al Jubail' },
+      'uppal': { lat: 17.4050, lng: 78.5580, wardId: 'ward-10', name: 'Uppal / Ramanthapur' },
+      'ramanthapur': { lat: 17.3950, lng: 78.5350, wardId: 'ward-10', name: 'Uppal / Ramanthapur' },
+      'khairatabad': { lat: 17.4120, lng: 78.4600, wardId: 'ward-91', name: 'Khairatabad / Somajiguda' },
+      'somajiguda': { lat: 17.4200, lng: 78.4600, wardId: 'ward-91', name: 'Khairatabad / Somajiguda' },
+      'banjara hills': { lat: 17.4156, lng: 78.4350, wardId: 'ward-91', name: 'Khairatabad / Somajiguda' },
+      'jubilee hills': { lat: 17.4300, lng: 78.4080, wardId: 'ward-72', name: 'Mehdipatnam / Nadeem Colony' },
+      'hitec city': { lat: 17.4435, lng: 78.3772, wardId: 'ward-8', name: 'Begumpet / Prakash Nagar' },
+      'gachibowli': { lat: 17.4400, lng: 78.3489, wardId: 'ward-71', name: 'Karwan / Tolichowki' },
+      'kukatpally': { lat: 17.4849, lng: 78.4138, wardId: 'ward-8', name: 'Begumpet / Prakash Nagar' },
+      'secunderabad': { lat: 17.4399, lng: 78.4983, wardId: 'ward-8', name: 'Begumpet / Prakash Nagar' },
+      'ameerpet': { lat: 17.4375, lng: 78.4482, wardId: 'ward-91', name: 'Khairatabad / Somajiguda' },
+      'nampally': { lat: 17.3888, lng: 78.4728, wardId: 'ward-48', name: 'Charminar / Ghansi Bazaar' },
+      'alwal': { lat: 17.5020, lng: 78.5110, wardId: 'ward-8', name: 'Begumpet / Prakash Nagar' },
+      'malkajgiri': { lat: 17.4520, lng: 78.5320, wardId: 'ward-10', name: 'Uppal / Ramanthapur' },
+      'dilsukhnagar': { lat: 17.3688, lng: 78.5247, wardId: 'ward-55', name: 'Malakpet / Moosarambagh' }
+    };
+
+    const qLower = query.toLowerCase().trim();
+    for (const [key, loc] of Object.entries(hyderabadLocalities)) {
+      if (qLower.includes(key)) {
+        setSelectedWardId(loc.wardId);
+        setUserGpsCoords({ lat: loc.lat, lng: loc.lng, accuracy: 25, label: `${loc.name} (${loc.lat.toFixed(4)}°, ${loc.lng.toFixed(4)}°)` });
+        setSearchQuery(`${loc.name}`);
+        const el = document.getElementById('monitor-section');
+        el?.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+
+    // 3. Online OpenStreetMap Geocoding Fallback
+    try {
+      const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Hyderabad')}&limit=1`);
+      if (osmRes.ok) {
+        const osmData = await osmRes.json();
+        if (osmData && osmData.length > 0) {
+          const lat = parseFloat(osmData[0].lat);
+          const lng = parseFloat(osmData[0].lon);
+
+          let bestWard = wardsData[0];
+          let minD = Infinity;
+          wardsData.forEach(w => {
+            const coords = w.geometry?.coordinates?.[0] || [[78.42, 17.38]];
+            const cLng = coords.reduce((acc, p) => acc + p[0], 0) / coords.length;
+            const cLat = coords.reduce((acc, p) => acc + p[1], 0) / coords.length;
+            const d = Math.sqrt(((lat - cLat) * 111.0) ** 2 + ((lng - cLng) * 105.0) ** 2);
+            if (d < minD) {
+              minD = d;
+              bestWard = w;
+            }
+          });
+
+          setSelectedWardId(bestWard.properties.ward_id);
+          const label = osmData[0].display_name.split(',')[0];
+          setUserGpsCoords({ lat, lng, accuracy: 50, label: `${label} (${lat.toFixed(4)}°, ${lng.toFixed(4)}°)` });
+          setSearchQuery(label);
+          const el = document.getElementById('monitor-section');
+          el?.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+      }
+    } catch (e) {
+      // offline fallback
+    }
+
+    alert(`Could not pinpoint "${query}". Showing closest monitoring telemetry for ${activeProps.name}.`);
+  };
+
   // Web Speech for Hero Banner localized
   const handleListenHero = () => {
     if ('speechSynthesis' in window) {
@@ -373,54 +528,71 @@ export default function Home() {
                 {getTranslation(currentLang, 'hero_sub')}
               </p>
 
-              {/* SEARCH BOX & GPS */}
-              <div className="w-full max-w-2xl bg-white rounded-full p-2 pl-5 flex items-center shadow-level2 border border-[#EADBCA] mb-6">
+              {/* DYNAMIC SEARCH BOX & REAL GPS */}
+              <div className="w-full max-w-2xl bg-white rounded-full p-2 pl-5 flex items-center shadow-level2 border border-[#EADBCA] mb-3">
                 <Search className="w-5 h-5 text-[#6F6A60] shrink-0 mr-2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={getTranslation(currentLang, 'search_placeholder')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearchLocation(searchQuery);
+                    }
+                  }}
+                  placeholder="Enter street, locality or colony (e.g. Tolichowki, Charminar, Banjara Hills, Begumpet)..."
                   className="w-full bg-transparent border-0 outline-none text-xs sm:text-sm text-[#1c1b1a] placeholder:text-[#6F6A60]/60"
                 />
                 <button
-                  onClick={() => {
-                    setSelectedWardId('ward-72');
-                    alert(currentLang === 'te' ? 'GPS లొకేషన్: వార్డ్ 72 (నదీమ్ కాలనీ / మెహదీపట్నం) ఎంపిక చేయబడింది.' : 'GPS Located: Ward 72 (Mehdipatnam / Nadeem Colony) identified.');
-                  }}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#F3EBDD] hover:bg-[#FDEBD3] text-[#1c1b1a] text-xs font-semibold shrink-0 transition-colors mr-1 cursor-pointer"
+                  type="button"
+                  onClick={handleUseRealGps}
+                  disabled={isLocatingGps}
+                  title="Detect your real GPS location via browser Geolocation API"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#F3EBDD] hover:bg-[#FDEBD3] text-[#1c1b1a] text-xs font-semibold shrink-0 transition-colors mr-1 cursor-pointer disabled:opacity-75"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-[#006070]" />
-                  <span>{getTranslation(currentLang, 'use_gps')}</span>
+                  <MapPin className={`w-3.5 h-3.5 text-[#006070] ${isLocatingGps ? 'animate-spin' : ''}`} />
+                  <span>{isLocatingGps ? 'Acquiring GPS...' : getTranslation(currentLang, 'use_gps')}</span>
                 </button>
                 <button
-                  onClick={() => {
-                    const found = wardsData.find(w => w.properties.name.toLowerCase().includes(searchQuery.toLowerCase()));
-                    if (found) {
-                      handleSelectSearchedWard(found.properties.ward_id);
-                    } else {
-                      alert('Showing telemetry for ' + activeProps.name);
-                    }
-                  }}
+                  type="button"
+                  onClick={() => handleSearchLocation(searchQuery)}
                   className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-[#1F7A8C] text-white hover:bg-[#17606F] text-xs font-semibold shrink-0 transition-all cursor-pointer"
                 >
                   {getTranslation(currentLang, 'inspect_btn')}
                 </button>
               </div>
 
-              {/* Auto-suggest dropdown when typing */}
+              {/* Live Location Status Indicator */}
+              {userGpsCoords && (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs bg-[#E6F5ED] text-[#4CAF7A] border border-[#4CAF7A]/30 mb-4 animate-fade-in">
+                  <span className="w-2 h-2 rounded-full bg-[#4CAF7A] animate-ping"></span>
+                  <span className="font-bold">Dynamic GPS Locked:</span>
+                  <span>{userGpsCoords.label}</span>
+                </div>
+              )}
+
+              {/* Dynamic Auto-suggest dropdown when typing */}
               {searchQuery.trim().length > 1 && (
                 <div className="w-full max-w-2xl bg-white rounded-2xl shadow-level3 border border-[#EADBCA] p-2 mb-6 text-left text-xs divide-y divide-[#EADBCA]">
                   {wardsData
-                    .filter(w => w.properties.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .filter(w =>
+                      w.properties.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      w.properties.circle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      w.properties.zone.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
                     .map(w => (
                       <div
                         key={w.properties.ward_id}
                         onClick={() => handleSelectSearchedWard(w.properties.ward_id)}
                         className="p-3 hover:bg-[#F3EBDD] cursor-pointer flex items-center justify-between"
                       >
-                        <span className="font-semibold">{w.properties.name}</span>
-                        <span className="text-[11px] text-[#6F6A60]">{w.properties.circle} • Elevation {w.properties.base_elevation_m}m</span>
+                        <div>
+                          <span className="font-semibold text-[#1c1b1a]">{w.properties.name}</span>
+                          <span className="text-[11px] text-[#6F6A60] block">{w.properties.circle} • Zone: {w.properties.zone}</span>
+                        </div>
+                        <span className="text-xs font-bold text-[#006070] px-2 py-0.5 rounded bg-[#E3F1F4]">
+                          Elev {w.properties.base_elevation_m}m
+                        </span>
                       </div>
                     ))}
                 </div>
@@ -465,7 +637,7 @@ export default function Home() {
 
             {/* WARD SELECTION PILL */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <MapPin className="w-5 h-5 text-[#1F7A8C]" />
                 <h2 className="font-heading text-2xl font-bold text-[#1c1b1a]">
                   {activeProps.name}
@@ -473,6 +645,12 @@ export default function Home() {
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-[#E3F1F4] text-[#006070]">
                   {activeProps.circle}
                 </span>
+                {userGpsCoords && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#E6F5ED] text-[#4CAF7A] border border-[#4CAF7A]/30">
+                    <span className="w-2 h-2 rounded-full bg-[#4CAF7A] animate-ping"></span>
+                    <span>Live GPS: {userGpsCoords.label}</span>
+                  </span>
+                )}
               </div>
 
               {/* Onboarding trigger */}

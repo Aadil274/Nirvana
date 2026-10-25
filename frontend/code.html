@@ -3105,16 +3105,87 @@ Portions of real-time municipal sensor and evacuation telemetry are modeled thro
         });
       });
 
-      // 6. GPS locator button
+      // 6. Dynamic Real GPS locator & Locality Resolver
       const gpsBtn = document.getElementById('btn-use-gps');
       const searchInput = document.getElementById('street-search-input');
+
+      const pilotWards = [
+        { name: 'Tolichowki / Nadeem Colony (Ward 72)', lat: 17.3820, lng: 78.4230, depth: '28', risk: 'Severe', summary: 'Severe Nala Overflow: 30cm - 45cm expected' },
+        { name: 'Karwan / Musi Causeway (Ward 71)', lat: 17.3780, lng: 78.4350, depth: '34', risk: 'Severe', summary: 'Musi Causeway Inundation: 35cm expected' },
+        { name: 'Moosarambagh / Malakpet (Ward 55)', lat: 17.3730, lng: 78.5095, depth: '31', risk: 'Severe', summary: 'Musi Backwater Surge: 30cm expected' },
+        { name: 'Charminar / Ghansi Bazaar (Ward 48)', lat: 17.3616, lng: 78.4747, depth: '14', risk: 'Moderate', summary: 'Localized Street Runoff: 12cm - 16cm' },
+        { name: 'Begumpet / Prakash Nagar (Ward 8)', lat: 17.4440, lng: 78.4680, depth: '18', risk: 'Moderate', summary: 'Runoff Ponding: 15cm - 20cm expected' },
+        { name: 'Khairatabad / Somajiguda (Ward 91)', lat: 17.4120, lng: 78.4600, depth: '10', risk: 'Low', summary: 'Normal Gravity Flow: Under 12cm' },
+        { name: 'Uppal / Ramanthapur (Ward 10)', lat: 17.4050, lng: 78.5580, depth: '26', risk: 'High', summary: 'Ramanthapur Lake Basin Ponding: 25cm' },
+        { name: 'Chandrayangutta / Al Jubail (Ward 44)', lat: 17.3200, lng: 78.4800, depth: '30', risk: 'Severe', summary: 'Al Jubail Depression: 30cm expected' }
+      ];
+
+      function applyLocationSelection(ward) {
+        const floodVal = document.getElementById('flood-depth-val');
+        const floodSummary = document.getElementById('flood-summary-text');
+        const riskBadge = document.getElementById('gauge-risk-badge');
+        const floodGaugeArc = document.getElementById('flood-gauge-arc');
+
+        if (floodVal) floodVal.innerHTML = ward.depth + '<span class="font-headline-sm text-headline-sm text-ink-muted">cm</span>';
+        if (floodSummary) floodSummary.innerHTML = 'Active Ward: <strong>' + ward.name + ' (' + ward.summary + ')</strong>';
+        if (riskBadge) {
+          riskBadge.textContent = ward.risk + ' Risk';
+          riskBadge.className = ward.risk === 'Severe'
+            ? 'px-3 py-1.5 rounded-full bg-risk-severe-bg text-risk-severe font-label-sm text-label-sm font-bold uppercase tracking-wide'
+            : (ward.risk === 'High' ? 'px-3 py-1.5 rounded-full bg-risk-high-bg text-on-secondary-container font-label-sm text-label-sm font-bold uppercase tracking-wide' : 'px-3 py-1.5 rounded-full bg-risk-low-bg text-risk-low font-label-sm text-label-sm font-bold uppercase tracking-wide');
+        }
+        if (floodGaugeArc) {
+          floodGaugeArc.setAttribute('d', ward.risk === 'Severe' ? 'M 20 80 A 60 60 0 0 1 140 80' : (ward.risk === 'High' ? 'M 20 80 A 60 60 0 0 1 125 40' : 'M 20 80 A 60 60 0 0 1 65 35'));
+        }
+      }
+
       if (gpsBtn && searchInput) {
         gpsBtn.addEventListener('click', function () {
-          gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-primary animate-spin">sync</span><span>Locating...</span>';
-          setTimeout(function () {
-            searchInput.value = 'Ward 68 - Tolichowki / Nadeem Colony, Hyderabad';
-            gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-risk-low">check</span><span>GPS Locked</span>';
-          }, 600);
+          if (!('geolocation' in navigator)) {
+            alert('Geolocation is not supported in this browser.');
+            return;
+          }
+          gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-primary animate-spin">sync</span><span>Acquiring GPS...</span>';
+
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+              const accuracy = Math.round(position.coords.accuracy);
+
+              let closest = pilotWards[0];
+              let minDist = Infinity;
+              pilotWards.forEach(function (w) {
+                const d = Math.sqrt(Math.pow((lat - w.lat) * 111, 2) + Math.pow((lng - w.lng) * 105, 2));
+                if (d < minDist) {
+                  minDist = d;
+                  closest = w;
+                }
+              });
+
+              searchInput.value = closest.name + ' [GPS: ' + lat.toFixed(4) + '° N, ' + lng.toFixed(4) + '° E ±' + accuracy + 'm]';
+              gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-risk-low">my_location</span><span>GPS: ' + lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°</span>';
+              gpsBtn.classList.add('bg-risk-low-bg', 'text-risk-low');
+
+              applyLocationSelection(closest);
+              alert('Live GPS Detected!\n\nLatitude: ' + lat.toFixed(5) + '° N\nLongitude: ' + lng.toFixed(5) + '° E (±' + accuracy + 'm accuracy)\nMatched to Closest Zone: ' + closest.name + '\nCalculated Inundation: ' + closest.depth + 'cm (' + closest.risk + ' Risk)');
+            },
+            function (err) {
+              gpsBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-primary">my_location</span><span>Use GPS</span>';
+              alert('Location Access Notice: ' + err.message + '. Please allow location access or type your locality in the search bar.');
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+          );
+        });
+
+        // Search input keydown listener (Enter key)
+        searchInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            const query = searchInput.value.toLowerCase().trim();
+            const match = pilotWards.find(w => w.name.toLowerCase().includes(query)) || pilotWards[0];
+            applyLocationSelection(match);
+            alert('Location Telemetry Updated: ' + match.name + '\nExpected Inundation: ' + match.depth + 'cm (' + match.risk + ' Risk)');
+          }
         });
       }
 

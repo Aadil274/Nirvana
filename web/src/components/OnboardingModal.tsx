@@ -103,7 +103,33 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <p className="text-xs text-[#6F6A60]">
               Select your ward in Hyderabad to receive street-specific flood depth and cooling center notices.
             </p>
-            <div className="space-y-2 max-h-64 overflow-y-auto p-1">
+
+            {/* GPS Detection Button in Onboarding */}
+            <button
+              type="button"
+              onClick={() => {
+                if ('geolocation' in navigator) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      const lat = pos.coords.latitude;
+                      const lng = pos.coords.longitude;
+                      // Default closest ward mapping
+                      setSelectedWard(lat < 17.37 ? 'ward-48' : lat > 17.42 ? 'ward-8' : 'ward-72');
+                      alert(`GPS Locked: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E. Closest neighborhood selected.`);
+                    },
+                    (err) => alert(`Could not access GPS: ${err.message}`)
+                  );
+                } else {
+                  alert('Geolocation not supported.');
+                }
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-[#F3EBDD] hover:bg-[#EADBCA] text-[#006070] text-xs font-bold flex items-center justify-center gap-2 border border-[#1F7A8C]/30 transition-all cursor-pointer"
+            >
+              <MapPin className="w-4 h-4 text-[#1F7A8C]" />
+              <span>Use My Live GPS Location</span>
+            </button>
+
+            <div className="space-y-2 max-h-56 overflow-y-auto p-1">
               {wards.map(w => (
                 <button
                   key={w.id}
