@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { RiskLevel, Horizon } from '../types';
-import { Waves, Flame, ArrowUpRight, ShieldAlert, Sparkles, Clock } from 'lucide-react';
+import { RiskLevel, Horizon, SupportedLanguage } from '../types';
+import { getTranslation } from '../lib/i18n';
+import { Waves, Flame } from 'lucide-react';
 
 interface DualRiskGaugeProps {
   floodScore: number;
@@ -15,6 +16,7 @@ interface DualRiskGaugeProps {
   horizon: Horizon;
   onHorizonChange: (h: Horizon) => void;
   confidence: number;
+  currentLang: SupportedLanguage;
 }
 
 export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
@@ -27,37 +29,35 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
   heatIndexC,
   horizon,
   onHorizonChange,
-  confidence
+  confidence,
+  currentLang
 }) => {
-  // Helper for gauge stroke colors and container backgrounds
   const getRiskColors = (level: RiskLevel) => {
     switch (level) {
       case 'Severe':
-        return { text: '#D9453D', bg: '#FBE1DF', stroke: '#D9453D', label: 'Severe Risk' };
+        return { text: '#D9453D', bg: '#FBE1DF', stroke: '#D9453D', labelKey: 'risk_severe' };
       case 'High':
-        return { text: '#EE7B30', bg: '#FDE6D6', stroke: '#EE7B30', label: 'High Risk' };
+        return { text: '#EE7B30', bg: '#FDE6D6', stroke: '#EE7B30', labelKey: 'risk_high' };
       case 'Moderate':
-        return { text: '#F2B134', bg: '#FDF3D8', stroke: '#F2B134', label: 'Moderate' };
+        return { text: '#F2B134', bg: '#FDF3D8', stroke: '#F2B134', labelKey: 'risk_moderate' };
       case 'Low':
       default:
-        return { text: '#4CAF7A', bg: '#E6F5ED', stroke: '#4CAF7A', label: 'Low Risk' };
+        return { text: '#4CAF7A', bg: '#E6F5ED', stroke: '#4CAF7A', labelKey: 'risk_low' };
     }
   };
 
   const floodColor = getRiskColors(floodLevel);
   const heatColor = getRiskColors(heatLevel);
 
-  // SVG Gauge calculations (circumference for semi-circle arc)
-  // Radius = 60, stroke = 14, Arc length = Math.PI * 60 = 188.5
   const arcLength = 188.5;
   const floodDashOffset = arcLength * (1 - Math.min(100, floodScore) / 100);
   const heatDashOffset = arcLength * (1 - Math.min(100, heatScore) / 100);
 
-  const horizons: { id: Horizon; label: string }[] = [
-    { id: 'now', label: 'Now' },
-    { id: '6h', label: '+6 Hours' },
-    { id: '24h', label: '+24 Hours' },
-    { id: '72h', label: '+72 Hours' },
+  const horizons: { id: Horizon; labelKey: string }[] = [
+    { id: 'now', labelKey: 'now_label' },
+    { id: '6h', labelKey: 'six_hours_label' },
+    { id: '24h', labelKey: 'twenty_four_hours_label' },
+    { id: '72h', labelKey: 'seventy_two_hours_label' },
   ];
 
   return (
@@ -66,10 +66,10 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#EADBCA]">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#1F7A8C]">
-            STREET RISK MONITOR (DUAL-HAZARD)
+            {getTranslation(currentLang, 'street_monitor_tag')}
           </span>
           <h2 className="font-heading text-xl lg:text-2xl font-bold text-[#1c1b1a]">
-            Hyperlocal Hydro &amp; Thermal Risk
+            {getTranslation(currentLang, 'hydro_thermal_title')}
           </h2>
         </div>
 
@@ -85,7 +85,7 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
                   : 'text-[#6F6A60] hover:text-[#1c1b1a]'
               }`}
             >
-              {h.label}
+              {getTranslation(currentLang, h.labelKey)}
             </button>
           ))}
         </div>
@@ -96,7 +96,6 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
         
         {/* 1. FLOOD RISK GAUGE */}
         <div className="relative p-6 rounded-2xl bg-[#fdf9f5] border border-[#EADBCA] flex flex-col items-center text-center overflow-hidden">
-          {/* Subtle Rain Particle Accents */}
           {floodScore > 60 && (
             <>
               <div className="rain-particle left-6 top-2" style={{ animationDelay: '0s' }}></div>
@@ -110,20 +109,20 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
               <div className="w-8 h-8 rounded-full bg-[#E3F1F4] flex items-center justify-center text-[#1F7A8C]">
                 <Waves className="w-4 h-4" />
               </div>
-              <span className="font-heading font-bold text-sm text-[#1c1b1a]">Flood Inundation</span>
+              <span className="font-heading font-bold text-sm text-[#1c1b1a]">
+                {getTranslation(currentLang, 'flood_inundation')}
+              </span>
             </div>
             <span
               className="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase"
               style={{ backgroundColor: floodColor.bg, color: floodColor.text }}
             >
-              {floodColor.label}
+              {getTranslation(currentLang, floodColor.labelKey)}
             </span>
           </div>
 
-          {/* SVG Gauge */}
           <div className="relative w-48 h-28 my-2 flex items-center justify-center">
             <svg viewBox="0 0 160 90" className="w-full h-full">
-              {/* Background Track Arc */}
               <path
                 d="M 20 80 A 60 60 0 0 1 140 80"
                 fill="none"
@@ -131,7 +130,6 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
                 strokeWidth="14"
                 strokeLinecap="round"
               />
-              {/* Active Animated Value Arc */}
               <path
                 d="M 20 80 A 60 60 0 0 1 140 80"
                 fill="none"
@@ -144,19 +142,20 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
               />
             </svg>
 
-            {/* In-gauge depth readout */}
             <div className="absolute bottom-1 flex flex-col items-center">
               <span className="font-heading text-3xl font-extrabold text-[#1c1b1a] leading-none">
                 {floodDepthCm}
                 <span className="text-sm font-semibold text-[#6F6A60] ml-0.5">cm</span>
               </span>
-              <span className="text-[11px] font-medium text-[#6F6A60] mt-0.5">Projected Depth</span>
+              <span className="text-[11px] font-medium text-[#6F6A60] mt-0.5">
+                {getTranslation(currentLang, 'projected_depth')}
+              </span>
             </div>
           </div>
 
           <div className="w-full mt-4 pt-3 border-t border-[#EADBCA]/60 flex items-center justify-between text-xs text-[#6F6A60]">
-            <span>Drain Capacity: <strong className="text-[#1c1b1a]">Blocked</strong></span>
-            <span>Confidence: <strong className="text-[#1F7A8C]">{confidence}%</strong></span>
+            <span>{getTranslation(currentLang, 'drain_capacity_label')} <strong className="text-[#1c1b1a]">{getTranslation(currentLang, 'drain_blocked')}</strong></span>
+            <span>{getTranslation(currentLang, 'confidence_label')} <strong className="text-[#1F7A8C]">{confidence}%</strong></span>
           </div>
         </div>
 
@@ -169,20 +168,20 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
               <div className="w-8 h-8 rounded-full bg-[#FDEBD3] flex items-center justify-center text-[#914d00]">
                 <Flame className="w-4 h-4" />
               </div>
-              <span className="font-heading font-bold text-sm text-[#1c1b1a]">Heat &amp; Thermal Stress</span>
+              <span className="font-heading font-bold text-sm text-[#1c1b1a]">
+                {getTranslation(currentLang, 'heat_thermal')}
+              </span>
             </div>
             <span
               className="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase"
               style={{ backgroundColor: heatColor.bg, color: heatColor.text }}
             >
-              {heatColor.label}
+              {getTranslation(currentLang, heatColor.labelKey)}
             </span>
           </div>
 
-          {/* SVG Gauge */}
           <div className="relative w-48 h-28 my-2 flex items-center justify-center">
             <svg viewBox="0 0 160 90" className="w-full h-full">
-              {/* Background Track Arc */}
               <path
                 d="M 20 80 A 60 60 0 0 1 140 80"
                 fill="none"
@@ -190,7 +189,6 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
                 strokeWidth="14"
                 strokeLinecap="round"
               />
-              {/* Active Animated Value Arc */}
               <path
                 d="M 20 80 A 60 60 0 0 1 140 80"
                 fill="none"
@@ -203,21 +201,20 @@ export const DualRiskGauge: React.FC<DualRiskGaugeProps> = ({
               />
             </svg>
 
-            {/* In-gauge temperature readout */}
             <div className="absolute bottom-1 flex flex-col items-center">
               <span className="font-heading text-3xl font-extrabold text-[#1c1b1a] leading-none">
                 {heatTempC}
                 <span className="text-sm font-semibold text-[#6F6A60] ml-0.5">°C</span>
               </span>
               <span className="text-[11px] font-medium text-[#6F6A60] mt-0.5">
-                Heat Index: {heatIndexC}°C
+                {getTranslation(currentLang, 'heat_index_label')}: {heatIndexC}°C
               </span>
             </div>
           </div>
 
           <div className="w-full mt-4 pt-3 border-t border-[#EADBCA]/60 flex items-center justify-between text-xs text-[#6F6A60]">
-            <span>UHI Canopy: <strong className="text-[#1c1b1a]">Sparse</strong></span>
-            <span>Outdoor Labor Risk: <strong className="text-[#EE7B30]">High</strong></span>
+            <span>{getTranslation(currentLang, 'uhi_canopy_label')} <strong className="text-[#1c1b1a]">{getTranslation(currentLang, 'uhi_sparse')}</strong></span>
+            <span>{getTranslation(currentLang, 'outdoor_risk_label')} <strong className="text-[#EE7B30]">{getTranslation(currentLang, 'risk_high')}</strong></span>
           </div>
         </div>
 

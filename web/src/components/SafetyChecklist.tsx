@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckSquare, Square, Volume2, ShieldCheck, PhoneCall, AlertCircle, Sparkles } from 'lucide-react';
-import { UserPersona } from '../types';
+import { CheckSquare, Square, Volume2, ShieldCheck, PhoneCall } from 'lucide-react';
+import { UserPersona, SupportedLanguage } from '../types';
+import { getTranslation, getLocalizedChecklist } from '../lib/i18n';
 
 interface SafetyChecklistProps {
   wardName: string;
@@ -10,6 +11,7 @@ interface SafetyChecklistProps {
   onPersonaChange: (p: UserPersona) => void;
   onSafeClick: () => void;
   onSosClick: () => void;
+  currentLang: SupportedLanguage;
 }
 
 export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
@@ -17,46 +19,13 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
   persona,
   onPersonaChange,
   onSafeClick,
-  onSosClick
+  onSosClick,
+  currentLang
 }) => {
   const [completed, setCompleted] = useState<Record<number, boolean>>({});
   const [speaking, setSpeaking] = useState(false);
 
-  const getChecklistForPersona = () => {
-    switch (persona) {
-      case 'low_lying':
-        return [
-          { id: 1, text: 'Flip main ground-floor electrical circuit breaker off immediately.' },
-          { id: 2, text: 'Move medicines, mobile chargers, and ID papers to upper floor or high shelves.' },
-          { id: 3, text: 'Activate bilge sump pumps and check drain check-valves are not backflowing.' },
-          { id: 4, text: 'Walk via elevated military road to Nadeem High School shelter if water reaches step.' }
-        ];
-      case 'outdoor_worker':
-        return [
-          { id: 1, text: 'Suspend direct physical outdoor labor between 12:00 PM and 04:00 PM.' },
-          { id: 2, text: 'Drink coconut water or ORS packets every 30 minutes; do not wait for thirst.' },
-          { id: 3, text: 'Rest in nearest public cooling center (Charminar Govt School Cooling Camp).' },
-          { id: 4, text: 'Report any sudden dizziness, blurred vision, or cessation of sweat to 108.' }
-        ];
-      case 'elderly':
-        return [
-          { id: 1, text: 'Keep family emergency contacts and 108 speed-dial by the bedside.' },
-          { id: 2, text: 'Rest in a well-ventilated, shaded room with damp cotton curtains.' },
-          { id: 3, text: 'Ensure 3 days of chronic medications and purified water jars are reachable.' },
-          { id: 4, text: 'Request volunteer assistance for essential groceries or medical transit.' }
-        ];
-      case 'general':
-      default:
-        return [
-          { id: 1, text: 'Charge mobile phones and power banks to 100%.' },
-          { id: 2, text: 'Store 10 liters of filtered drinking water in sealed containers.' },
-          { id: 3, text: 'Avoid driving vehicles into waterlogged underpasses or nala embankments.' },
-          { id: 4, text: 'Check in on elderly or disabled neighbors on your street block.' }
-        ];
-    }
-  };
-
-  const items = getChecklistForPersona();
+  const items = getLocalizedChecklist(currentLang, persona);
 
   const toggleCheck = (id: number) => {
     setCompleted(prev => ({ ...prev, [id]: !prev[id] }));
@@ -69,9 +38,16 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
         setSpeaking(false);
         return;
       }
-      const textToRead = items.map((it, i) => `Step ${i + 1}: ${it.text}`).join('. ');
+      const textToRead = items.map((it, i) => `${i + 1}. ${it.text}`).join('. ');
       const utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.rate = 0.95;
+      utterance.rate = 0.90;
+      
+      // Match Indian regional voice locale
+      if (currentLang === 'te') utterance.lang = 'te-IN';
+      else if (currentLang === 'hi') utterance.lang = 'hi-IN';
+      else if (currentLang === 'ta') utterance.lang = 'ta-IN';
+      else utterance.lang = 'en-IN';
+
       utterance.onend = () => setSpeaking(false);
       utterance.onerror = () => setSpeaking(false);
       setSpeaking(true);
@@ -86,10 +62,10 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-[#EADBCA]">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#EE7B30]">
-            ACTIONABLE CIVIC PROTOCOL
+            {getTranslation(currentLang, 'actionable_protocol_tag')}
           </span>
           <h3 className="font-heading text-xl lg:text-2xl font-bold text-[#1c1b1a]">
-            What To Do Right Now ({wardName})
+            {getTranslation(currentLang, 'what_to_do_now')} ({wardName})
           </h3>
         </div>
 
@@ -103,21 +79,21 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
           }`}
         >
           <Volume2 className="w-4 h-4 text-[#006070]" />
-          <span>{speaking ? 'Stop Audio' : '🔊 Listen Action Guide'}</span>
+          <span>{speaking ? getTranslation(currentLang, 'stop_audio') : getTranslation(currentLang, 'listen_action_guide')}</span>
         </button>
       </div>
 
       {/* Persona Selector Chips */}
       <div className="mb-6">
         <label className="block text-xs font-semibold text-[#6F6A60] mb-2 uppercase tracking-wider">
-          Tailor guidance to your profile:
+          {getTranslation(currentLang, 'tailor_profile_label')}
         </label>
         <div className="flex flex-wrap gap-2">
           {[
-            { id: 'low_lying', label: '🏠 Low-Lying Ground Home' },
-            { id: 'outdoor_worker', label: '🔨 Outdoor Worker' },
-            { id: 'elderly', label: '👴 Senior Citizen / Caregiver' },
-            { id: 'general', label: '👥 General Resident' }
+            { id: 'low_lying', labelKey: 'persona_low_lying' },
+            { id: 'outdoor_worker', labelKey: 'persona_outdoor_worker' },
+            { id: 'elderly', labelKey: 'persona_elderly' },
+            { id: 'general', labelKey: 'persona_general' }
           ].map(p => (
             <button
               key={p.id}
@@ -128,7 +104,7 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
                   : 'bg-white text-[#6F6A60] border-[#EADBCA] hover:bg-[#F3EBDD]'
               }`}
             >
-              {p.label}
+              {getTranslation(currentLang, p.labelKey)}
             </button>
           ))}
         </div>
@@ -171,10 +147,10 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E6F5ED] text-[#4CAF7A] hover:bg-[#4CAF7A] hover:text-white text-xs font-bold transition-all border border-[#4CAF7A]/30 cursor-pointer"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>I Am Safe</span>
+            <span>{getTranslation(currentLang, 'im_safe_btn')}</span>
           </button>
           <span className="text-xs text-[#6F6A60] hidden sm:inline">
-            Notifies family &amp; ward marshal
+            {getTranslation(currentLang, 'im_safe_desc')}
           </span>
         </div>
 
@@ -183,7 +159,7 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#EE7B30] text-white hover:bg-[#d9671e] text-xs font-bold transition-all shadow-level1 cursor-pointer"
         >
           <PhoneCall className="w-4 h-4" />
-          <span>SOS / Need Rescue</span>
+          <span>{getTranslation(currentLang, 'sos_btn')}</span>
         </button>
       </div>
     </div>

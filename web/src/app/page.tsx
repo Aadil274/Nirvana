@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   SupportedLanguage,
   UserPersona,
@@ -37,16 +37,10 @@ import {
   Search,
   MapPin,
   Volume2,
-  AlertTriangle,
-  Waves,
-  Flame,
   Shield,
   Sparkles,
-  Info,
   CheckCircle,
-  ExternalLink,
-  ChevronRight,
-  ArrowRight
+  ChevronRight
 } from 'lucide-react';
 
 export default function Home() {
@@ -96,7 +90,6 @@ export default function Home() {
     setSimulatedTimeStep(2);
     setSelectedWardId('ward-72');
 
-    // Add high-priority live emergency alert
     const newAlert: AlertItem = {
       id: `alt-demo-${Date.now()}`,
       hazard: 'flood',
@@ -140,7 +133,7 @@ export default function Home() {
   const handleRunHeatwave = () => {
     setIsScenarioActive(true);
     setTemperatureC(44);
-    setSelectedWardId('ward-48'); // Charminar / Old City
+    setSelectedWardId('ward-48');
     alert('SIMULATION TRIGGERED: 44°C Extreme Heatwave scenario active for Charminar / Old City. Mandatory cooling center protocol activated.');
   };
 
@@ -154,7 +147,6 @@ export default function Home() {
     setKpis(INITIAL_KPIS);
   };
 
-  // Citizen Report Submission
   const handleAddReport = (newRep: Partial<CitizenReport>) => {
     const reportObj: CitizenReport = {
       id: `rep-${Date.now()}`,
@@ -187,7 +179,6 @@ export default function Home() {
     );
   };
 
-  // Search filtering
   const wardOptions = wardsData.map(w => ({
     id: w.properties.ward_id,
     name: w.properties.name
@@ -200,12 +191,29 @@ export default function Home() {
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Web Speech for Hero Banner
+  // Web Speech for Hero Banner localized
   const handleListenHero = () => {
     if ('speechSynthesis' in window) {
-      const msg = `Nirvana Hyperlocal Climate Advisory for Hyderabad. Active alert in ${activeProps.name}. Estimated flood depth is ${dynamicDepthCm} centimeters. Nearest relief shelter is ${shelters[0].name}.`;
+      let msg = '';
+      let speechLocale = 'en-IN';
+
+      if (currentLang === 'te') {
+        speechLocale = 'te-IN';
+        msg = `నిర్వాణ వాతావరణ హెచ్చరిక. ${activeProps.name} పరిధిలో వరద ముప్పు ఎక్కువగా ఉంది. నీటి మట్టం దాదాపు ${dynamicDepthCm} సెంటీమీటర్లు చేరే అవకాశం ఉంది. సమీప పునరావాస కేంద్రం ${shelters[0].name}.`;
+      } else if (currentLang === 'hi') {
+        speechLocale = 'hi-IN';
+        msg = `निर्वाणा जलवायु चेतावनी। ${activeProps.name} में बाढ़ का जोखिम अधिक है। अनुमानित जलभराव ${dynamicDepthCm} सेंटीमीटर है। निकटतम आश्रय ${shelters[0].name} है।`;
+      } else if (currentLang === 'ta') {
+        speechLocale = 'ta-IN';
+        msg = `நிர்வாணா வானிலை எச்சரிக்கை. ${activeProps.name} பகுதியில் வெள்ள அபாயம் உள்ளது. எதிர்பார்க்கப்படும் நீர்மட்டம் ${dynamicDepthCm} சென்டிமீட்டர். அருகிலுள்ள முகாம் ${shelters[0].name}.`;
+      } else {
+        speechLocale = 'en-IN';
+        msg = `Nirvana Hyperlocal Climate Advisory for Hyderabad. Active alert in ${activeProps.name}. Estimated flood depth is ${dynamicDepthCm} centimeters. Nearest relief shelter is ${shelters[0].name}.`;
+      }
+
       const utterance = new SpeechSynthesisUtterance(msg);
-      utterance.rate = 0.92;
+      utterance.lang = speechLocale;
+      utterance.rate = 0.90;
       window.speechSynthesis.speak(utterance);
     } else {
       alert('Text-to-speech not supported.');
@@ -283,7 +291,7 @@ export default function Home() {
                   className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F3EBDD] hover:bg-[#FDEBD3] text-[#1c1b1a] font-semibold transition-all shadow-sm cursor-pointer"
                 >
                   <Volume2 className="w-4 h-4 text-[#006070]" />
-                  <span>🔊 {getTranslation(currentLang, 'listen_btn')}</span>
+                  <span>{getTranslation(currentLang, 'listen_btn')}</span>
                 </button>
                 <div className="hidden md:inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#E6F5ED] text-[#4CAF7A] font-semibold">
                   <Sparkles className="w-3.5 h-3.5" />
@@ -300,11 +308,16 @@ export default function Home() {
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#FDEBD3] text-[#914d00] text-xs font-bold uppercase tracking-wider mb-5 shadow-sm">
                 <Shield className="w-4 h-4 text-[#EE7B30]" />
-                <span>Hyperlocal Street-Level Climate Intelligence</span>
+                <span>{getTranslation(currentLang, 'hero_badge')}</span>
               </div>
 
+              {/* Multilingual Headline */}
               <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#1c1b1a] max-w-4xl tracking-tight leading-tight mb-4">
-                Know what’s coming to <span className="text-[#914d00] underline decoration-[#fc9430] decoration-4 underline-offset-8">your street</span>, before it arrives.
+                {getTranslation(currentLang, 'hero_headline_pre')}
+                <span className="text-[#914d00] underline decoration-[#fc9430] decoration-4 underline-offset-8">
+                  {getTranslation(currentLang, 'hero_headline_target')}
+                </span>
+                {getTranslation(currentLang, 'hero_headline_post')}
               </h1>
 
               <p className="text-sm sm:text-base text-[#6F6A60] max-w-3xl mb-8 leading-relaxed">
@@ -318,13 +331,13 @@ export default function Home() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter colony or ward (e.g. Nadeem Colony, Tolichowki, Moosarambagh, Begumpet)..."
+                  placeholder={getTranslation(currentLang, 'search_placeholder')}
                   className="w-full bg-transparent border-0 outline-none text-xs sm:text-sm text-[#1c1b1a] placeholder:text-[#6F6A60]/60"
                 />
                 <button
                   onClick={() => {
                     setSelectedWardId('ward-72');
-                    alert('GPS Located: Ward 72 (Mehdipatnam / Nadeem Colony) identified with 5m accuracy.');
+                    alert(currentLang === 'te' ? 'GPS లొకేషన్: వార్డ్ 72 (నదీమ్ కాలనీ / మెహదీపట్నం) ఎంపిక చేయబడింది.' : 'GPS Located: Ward 72 (Mehdipatnam / Nadeem Colony) identified.');
                   }}
                   className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#F3EBDD] hover:bg-[#FDEBD3] text-[#1c1b1a] text-xs font-semibold shrink-0 transition-colors mr-1 cursor-pointer"
                 >
@@ -342,7 +355,7 @@ export default function Home() {
                   }}
                   className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-[#1F7A8C] text-white hover:bg-[#17606F] text-xs font-semibold shrink-0 transition-all cursor-pointer"
                 >
-                  Inspect
+                  {getTranslation(currentLang, 'inspect_btn')}
                 </button>
               </div>
 
@@ -366,14 +379,14 @@ export default function Home() {
 
               {/* Quick Language Rail */}
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <span className="text-xs text-[#6F6A60] mr-1">Switch Language:</span>
-                {LANGUAGES.slice(0, 5).map(lang => (
+                <span className="text-xs text-[#6F6A60] mr-1">{getTranslation(currentLang, 'switch_lang_label')}</span>
+                {LANGUAGES.slice(0, 6).map(lang => (
                   <button
                     key={lang.code}
                     onClick={() => setCurrentLang(lang.code)}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border cursor-pointer ${
                       currentLang === lang.code
-                        ? 'bg-[#1F7A8C] text-white border-[#1F7A8C]'
+                        ? 'bg-[#1F7A8C] text-white border-[#1F7A8C] shadow-sm'
                         : 'bg-white text-[#6F6A60] border-[#EADBCA] hover:bg-[#F3EBDD]'
                     }`}
                   >
@@ -398,6 +411,7 @@ export default function Home() {
               onRunHeatwaveScenario={handleRunHeatwave}
               onResetScenario={handleResetScenario}
               isScenarioActive={isScenarioActive}
+              currentLang={currentLang}
             />
 
             {/* WARD SELECTION PILL */}
@@ -417,7 +431,7 @@ export default function Home() {
                 onClick={() => setOnboardingOpen(true)}
                 className="text-xs font-semibold text-[#006070] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>Change notification settings &amp; profile</span>
+                <span>{getTranslation(currentLang, 'onboarding_settings_label')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -435,6 +449,7 @@ export default function Home() {
                 horizon={horizon}
                 onHorizonChange={setHorizon}
                 confidence={activeProps.confidence || 94}
+                currentLang={currentLang}
               />
             </div>
 
@@ -449,18 +464,20 @@ export default function Home() {
                 wardName={activeProps.name}
                 elevationM={activeProps.base_elevation_m}
                 drainageHealth={activeProps.drainage_health}
+                currentLang={currentLang}
               />
 
               <SafetyChecklist
                 wardName={activeProps.name}
                 persona={persona}
                 onPersonaChange={setPersona}
-                onSafeClick={() => alert('Welfare status updated: "I Am Safe" registered with GHMC Emergency Operations and your emergency family contact.')}
+                onSafeClick={() => alert(currentLang === 'te' ? 'మీరు సురక్షితంగా ఉన్నారని వార్డ్ అధికారికి మరియు కుటుంబానికి సమాచారం చేరవేయబడింది.' : 'Welfare status updated: "I Am Safe" registered with GHMC Emergency Operations.')}
                 onSosClick={() => {
-                  if (confirm('SOS ALERT: Direct emergency beacon will be sent to SDRF First Responders. Proceed to call 112?')) {
+                  if (confirm(currentLang === 'te' ? 'తక్షణ సహాయం కొరకు 112 కు కాల్ చేయాలా?' : 'SOS ALERT: Direct emergency beacon will be sent to SDRF First Responders. Proceed to call 112?')) {
                     window.location.href = 'tel:112';
                   }
                 }}
+                currentLang={currentLang}
               />
             </div>
 
@@ -475,6 +492,7 @@ export default function Home() {
                 rainfallRate={rainfallRate}
                 simulatedTimeStep={simulatedTimeStep}
                 onTimeStepChange={setSimulatedTimeStep}
+                currentLang={currentLang}
               />
             </div>
 
@@ -483,6 +501,7 @@ export default function Home() {
               <ShelterLocator
                 shelters={shelters}
                 onCallShelter={(phone) => (window.location.href = `tel:${phone}`)}
+                currentLang={currentLang}
               />
             </div>
 
@@ -493,6 +512,7 @@ export default function Home() {
                 onSubmitReport={handleAddReport}
                 onConfirmReport={handleConfirmReport}
                 currentWardName={activeProps.name}
+                currentLang={currentLang}
               />
             </div>
 
@@ -500,30 +520,30 @@ export default function Home() {
             <section className="w-full bg-[#F3EBDD]/50 rounded-card p-8 border border-[#EADBCA] mt-16" id="telemetry-section">
               <div className="max-w-4xl mx-auto text-center">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#006070]">
-                  MULTI-AGENCY TELEMETRY FABRIC &amp; OPEN DATA
+                  {getTranslation(currentLang, 'telemetry_tag')}
                 </span>
                 <h3 className="font-heading text-2xl font-bold text-[#1c1b1a] mt-1 mb-3">
-                  Validated against national meteorological &amp; state hydrological models
+                  {getTranslation(currentLang, 'telemetry_title')}
                 </h3>
                 <p className="text-xs text-[#6F6A60] leading-relaxed mb-6">
-                  Nirvana continuously calibrates IMD Doppler radar data, Copernicus Sentinel SAR soil moisture, and municipal culvert IoT depth sensors against verified citizen observations to eliminate false alarms and maximize hyper-local precision.
+                  {getTranslation(currentLang, 'telemetry_desc')}
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="p-4 rounded-2xl bg-white border border-[#EADBCA] text-left">
-                    <span className="font-bold text-xs text-[#1c1b1a] block">IMD Doppler Radar</span>
+                    <span className="font-bold text-xs text-[#1c1b1a] block">{getTranslation(currentLang, 'radar_label')}</span>
                     <span className="text-[11px] text-[#6F6A60]">Begumpet S-Band</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-white border border-[#EADBCA] text-left">
-                    <span className="font-bold text-xs text-[#1c1b1a] block">Sentinel-1 SAR</span>
+                    <span className="font-bold text-xs text-[#1c1b1a] block">{getTranslation(currentLang, 'sar_label')}</span>
                     <span className="text-[11px] text-[#6F6A60]">Surface Water Extent</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-white border border-[#EADBCA] text-left">
-                    <span className="font-bold text-xs text-[#1c1b1a] block">GHMC Culvert IoT</span>
+                    <span className="font-bold text-xs text-[#1c1b1a] block">{getTranslation(currentLang, 'iot_label')}</span>
                     <span className="text-[11px] text-[#6F6A60]">42 Sensor Nodes</span>
                   </div>
                   <div className="p-4 rounded-2xl bg-white border border-[#EADBCA] text-left">
-                    <span className="font-bold text-xs text-[#1c1b1a] block">Ground Truth</span>
+                    <span className="font-bold text-xs text-[#1c1b1a] block">{getTranslation(currentLang, 'ground_truth_label')}</span>
                     <span className="text-[11px] text-[#6F6A60]">Human Verification</span>
                   </div>
                 </div>
@@ -535,7 +555,7 @@ export default function Home() {
       )}
 
       {/* 4. FOOTER */}
-      <Footer />
+      <Footer currentLang={currentLang} />
 
       {/* 5. ONBOARDING MODAL */}
       <OnboardingModal
@@ -545,7 +565,7 @@ export default function Home() {
           setCurrentLang(data.language);
           setSelectedWardId(data.wardId);
           setPersona(data.persona);
-          alert(`Preferences saved! Alerts registered for ${data.wardId} in ${data.language}.`);
+          alert(data.language === 'te' ? `ప్రాధాన్యతలు భద్రపరచబడ్డాయి! ${data.wardId} కొరకు తెలుగులో హెచ్చరికలు నమోదయ్యాయి.` : `Preferences saved! Alerts registered for ${data.wardId} in ${data.language}.`);
         }}
         wards={wardOptions}
       />

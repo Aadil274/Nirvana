@@ -21,8 +21,22 @@ class ResourceAssignment(BaseModel):
     ward_id: str
 
 @router.get("/kpis")
+@router.get("/overview")
 def get_kpis():
     return {
+        "kpis": {
+            "wards_at_severe": 5,
+            "total_wards_monitored": 22,
+            "people_in_high_risk": 342000,
+            "shelters_open": 16,
+            "shelters_total_capacity": 7200,
+            "shelters_current_occupancy": 1840,
+            "active_citizen_reports": 38,
+            "verified_citizen_reports": 32,
+            "alerts_dispatched_today": 12,
+            "rainfall_max_hourly_mm": 58.0,
+            "last_telemetry_sync": "2026-10-25T18:15:00Z"
+        },
         "wards_at_severe": 5,
         "total_wards_monitored": 22,
         "people_in_high_risk": 342000,
@@ -108,6 +122,7 @@ def assign_resource(payload: ResourceAssignment):
     return {"status": "assigned", "resource": item}
 
 @router.get("/situation-report")
+@router.get("/sitrep")
 def get_situation_report():
     """
     Generates a print-friendly Situation Report (SitRep) for Disaster Management Commissioners.

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { WardFeature, Shelter, CitizenReport } from '../types';
-import { Layers, Play, Pause, RotateCcw, MapPin, Eye, Waves, Flame, Home, AlertCircle, Compass } from 'lucide-react';
+import { WardFeature, Shelter, CitizenReport, SupportedLanguage } from '../types';
+import { getTranslation } from '../lib/i18n';
+import { Layers, Play, Pause, Compass, Waves, Flame, Home, AlertCircle } from 'lucide-react';
 
 interface MapComponentProps {
   wards: WardFeature[];
@@ -13,6 +14,7 @@ interface MapComponentProps {
   rainfallRate: number;
   simulatedTimeStep: number;
   onTimeStepChange: (step: number) => void;
+  currentLang: SupportedLanguage;
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({
@@ -23,7 +25,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   onSelectWard,
   rainfallRate,
   simulatedTimeStep,
-  onTimeStepChange
+  onTimeStepChange,
+  currentLang
 }) => {
   const [activeLayers, setActiveLayers] = useState({
     flood: true,
@@ -48,9 +51,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     setActiveLayers(prev => ({ ...prev, [layerKey]: !prev[layerKey] }));
   };
 
-  // Convert geo coordinates to local SVG bounds
-  // Longitude range: 78.33 to 78.58 (delta ~0.25) -> X: 50 to 750
-  // Latitude range: 17.30 to 17.52 (delta ~0.22) -> Y: 450 to 50 (inverted Y)
   const projectPoint = (lng: number, lat: number) => {
     const minLng = 78.32;
     const maxLng = 78.58;
@@ -71,7 +71,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       if (score >= 55) return '#FDF3D8';
       return '#fdf9f5';
     }
-    // Default Flood layer
     const score = ward.properties.flood_score || 50;
     if (score >= 75) return '#FBE1DF';
     if (score >= 55) return '#FDE6D6';
@@ -94,19 +93,26 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     return '#4CAF7A';
   };
 
+  const horizonStepLabels = [
+    getTranslation(currentLang, 'now_label'),
+    getTranslation(currentLang, 'six_hours_label'),
+    getTranslation(currentLang, 'twenty_four_hours_label'),
+    getTranslation(currentLang, 'seventy_two_hours_label'),
+  ];
+
   return (
     <div className="w-full bg-[#FFFFFF] rounded-card border border-[#EADBCA] p-6 lg:p-8 shadow-level1" id="live-risk-map">
       {/* Top Map Header & Controls */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-6 border-b border-[#EADBCA]">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-[#1F7A8C]">
-            GEOSPATIAL SITUATIONAL AWARENESS
+            {getTranslation(currentLang, 'map_tag')}
           </span>
           <h3 className="font-heading text-xl lg:text-2xl font-bold text-[#1c1b1a]">
-            Hyderabad Hyperlocal Risk Map
+            {getTranslation(currentLang, 'map_title')}
           </h3>
           <p className="text-xs text-[#6F6A60] mt-0.5">
-            Light cream vector canvas showing 22 monitored wards, Musi River basin, and storm drains.
+            {getTranslation(currentLang, 'map_subtitle')}
           </p>
         </div>
 
@@ -121,7 +127,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             }`}
           >
             <Waves className="w-3.5 h-3.5" />
-            <span>Flood Inundation</span>
+            <span>{getTranslation(currentLang, 'layer_flood')}</span>
           </button>
 
           <button
@@ -133,7 +139,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             }`}
           >
             <Flame className="w-3.5 h-3.5" />
-            <span>Urban Heat</span>
+            <span>{getTranslation(currentLang, 'layer_heat')}</span>
           </button>
 
           <button
@@ -145,7 +151,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             }`}
           >
             <Home className="w-3.5 h-3.5" />
-            <span>Shelters ({shelters.length})</span>
+            <span>{getTranslation(currentLang, 'layer_shelters')} ({shelters.length})</span>
           </button>
 
           <button
@@ -157,7 +163,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             }`}
           >
             <AlertCircle className="w-3.5 h-3.5" />
-            <span>Citizen Reports ({reports.length})</span>
+            <span>{getTranslation(currentLang, 'layer_reports')} ({reports.length})</span>
           </button>
         </div>
       </div>
@@ -172,7 +178,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             className="w-full h-full select-none"
             style={{ backgroundColor: '#FBF7EF' }}
           >
-            {/* Grid texture */}
             <defs>
               <pattern id="light-grid" width="30" height="30" patternUnits="userSpaceOnUse">
                 <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#EADBCA" strokeWidth="0.6" strokeOpacity="0.6" />
@@ -190,13 +195,13 @@ export const MapComponent: React.FC<MapComponentProps> = ({
               strokeOpacity="0.45"
             />
             <text x="440" y="325" fill="#3A8FD6" fontSize="10" fontWeight="bold" letterSpacing="2">
-              MUSI RIVER FLOOD CORRIDOR
+              {currentLang === 'te' ? 'మూసీ నది వరద కారిడార్' : currentLang === 'hi' ? 'मूसी नदी बाढ़ गलियारा' : 'MUSI RIVER FLOOD CORRIDOR'}
             </text>
 
             {/* Hussain Sagar Waterbody */}
             <ellipse cx="440" cy="210" rx="32" ry="24" fill="#3A8FD6" fillOpacity="0.35" stroke="#3A8FD6" strokeWidth="1.5" />
             <text x="410" y="214" fill="#005b93" fontSize="9" fontWeight="bold">
-              Hussain Sagar
+              {currentLang === 'te' ? 'హుస్సేన్ సాగర్' : currentLang === 'hi' ? 'हुसैन सागर' : 'Hussain Sagar'}
             </text>
 
             {/* WARD POLYGONS */}
@@ -205,7 +210,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
               const pointsStr = coords.map(c => projectPoint(c[0], c[1])).join(' ');
               const isSelected = ward.properties.ward_id === selectedWardId;
 
-              // Centroid for label
               const avgLng = coords.reduce((acc, c) => acc + c[0], 0) / coords.length;
               const avgLat = coords.reduce((acc, c) => acc + c[1], 0) / coords.length;
               const [labelX, labelY] = projectPoint(avgLng, avgLat).split(',').map(Number);
@@ -273,12 +277,12 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-2xl border border-[#EADBCA] p-3 shadow-level1 flex flex-col gap-2 text-xs">
             <span className="font-bold text-[#1c1b1a] flex items-center gap-1.5">
               <Compass className="w-4 h-4 text-[#1F7A8C]" />
-              Hydrological Basins
+              {currentLang === 'te' ? 'జలవనరుల పరీవాహకం' : currentLang === 'hi' ? 'जलग्रहण बेसिन' : 'Hydrological Basins'}
             </span>
             <div className="flex items-center gap-2 text-[11px] text-[#6F6A60]">
-              <span className="w-3 h-3 rounded-full bg-[#D9453D]"></span> Severe (&gt;75)
-              <span className="w-3 h-3 rounded-full bg-[#EE7B30]"></span> High (55-75)
-              <span className="w-3 h-3 rounded-full bg-[#4CAF7A]"></span> Low (&lt;35)
+              <span className="w-3 h-3 rounded-full bg-[#D9453D]"></span> {getTranslation(currentLang, 'risk_severe')}
+              <span className="w-3 h-3 rounded-full bg-[#EE7B30]"></span> {getTranslation(currentLang, 'risk_high')}
+              <span className="w-3 h-3 rounded-full bg-[#4CAF7A]"></span> {getTranslation(currentLang, 'risk_low')}
             </div>
           </div>
         </div>
@@ -291,7 +295,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
                 {selectedWard.properties.circle} • {selectedWard.properties.zone}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FBE1DF] text-[#D9453D]">
-                {selectedWard.properties.flood_level || 'Severe'}
+                {getTranslation(currentLang, selectedWard.properties.flood_level === 'Severe' ? 'risk_severe' : 'risk_high')}
               </span>
             </div>
 
@@ -299,32 +303,32 @@ export const MapComponent: React.FC<MapComponentProps> = ({
               {selectedWard.properties.name}
             </h4>
             <span className="text-xs text-[#6F6A60] block mb-4">
-              Population: {selectedWard.properties.population.toLocaleString()} | Area: {selectedWard.properties.area_sqkm} sq.km
+              {currentLang === 'te' ? 'జనాభా' : currentLang === 'hi' ? 'जनसंख्या' : 'Population'}: {selectedWard.properties.population.toLocaleString()} | {selectedWard.properties.area_sqkm} sq.km
             </span>
 
             {/* Quick Metrics */}
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between p-2 rounded-xl bg-[#FBF7EF] border border-[#EADBCA]">
-                <span className="text-[#6F6A60]">Base Elevation:</span>
+                <span className="text-[#6F6A60]">{getTranslation(currentLang, 'base_elevation_label')}</span>
                 <strong className="text-[#1c1b1a]">{selectedWard.properties.base_elevation_m}m MSL</strong>
               </div>
               <div className="flex items-center justify-between p-2 rounded-xl bg-[#FBF7EF] border border-[#EADBCA]">
-                <span className="text-[#6F6A60]">Drainage Status:</span>
-                <strong className="text-[#EE7B30]">{selectedWard.properties.drainage_health}</strong>
+                <span className="text-[#6F6A60]">{getTranslation(currentLang, 'drainage_status_label')}</span>
+                <strong className="text-[#EE7B30]">{currentLang === 'te' ? 'మూసుకుపోయింది' : currentLang === 'hi' ? 'अवरुद्ध' : selectedWard.properties.drainage_health}</strong>
               </div>
               <div className="flex items-center justify-between p-2 rounded-xl bg-[#FBF7EF] border border-[#EADBCA]">
-                <span className="text-[#6F6A60]">Expected Water Depth:</span>
+                <span className="text-[#6F6A60]">{getTranslation(currentLang, 'expected_depth_label')}</span>
                 <strong className="text-[#D9453D]">{selectedWard.properties.flood_depth_cm || 25} cm</strong>
               </div>
               <div className="flex items-center justify-between p-2 rounded-xl bg-[#FBF7EF] border border-[#EADBCA]">
-                <span className="text-[#6F6A60]">Active Relief Shelters:</span>
-                <strong className="text-[#4CAF7A]">{selectedWard.properties.active_shelters} Centres</strong>
+                <span className="text-[#6F6A60]">{getTranslation(currentLang, 'active_shelters_label')}</span>
+                <strong className="text-[#4CAF7A]">{selectedWard.properties.active_shelters}</strong>
               </div>
             </div>
 
             {/* Action Notice */}
             <div className="mt-4 p-3 rounded-xl bg-[#FDEBD3] border border-[#EE7B30]/30 text-[11px] text-[#914d00]">
-              <strong>AI Action Recommendation:</strong> Pre-position 2 mobile de-watering pumps at colony nala bridge.
+              <strong>{getTranslation(currentLang, 'ai_recommendation_tag')}</strong> {currentLang === 'te' ? 'కాలనీ కల్వర్ట్ వంతెన వద్ద 2 డి-వాటరింగ్ పంపులను సిద్ధం చేయండి.' : currentLang === 'hi' ? 'पुलिया के पास 2 डी-वाटरिंग पंप तैनात करें।' : 'Pre-position 2 mobile de-watering pumps at colony nala bridge.'}
             </div>
           </div>
 
@@ -335,7 +339,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             }}
             className="w-full py-2.5 rounded-full bg-[#1F7A8C] text-white text-xs font-semibold hover:bg-[#17606F] transition-colors text-center"
           >
-            Inspect Ward Telemetry
+            {getTranslation(currentLang, 'inspect_telemetry_btn')}
           </button>
         </div>
       </div>
@@ -348,10 +352,10 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1F7A8C] text-white hover:bg-[#17606F] text-xs font-semibold shadow-sm transition-all"
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{isPlaying ? 'Pause Forecast' : 'Play Forecast Scrubber'}</span>
+            <span>{isPlaying ? getTranslation(currentLang, 'pause_forecast') : getTranslation(currentLang, 'play_forecast')}</span>
           </button>
           <span className="text-xs text-[#6F6A60]">
-            Time Horizon: <strong>{['Now (T+0)', '+6 Hours (T+6)', '+24 Hours (T+24)', '+72 Hours (T+72)'][simulatedTimeStep]}</strong>
+            {getTranslation(currentLang, 'time_horizon_label')} <strong>{horizonStepLabels[simulatedTimeStep]}</strong>
           </span>
         </div>
 

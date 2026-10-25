@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center gap-3">
             <span className="text-xs text-[#6F6A60] hidden sm:inline">
-              Hyderabad (GHMC) Pilot
+              {getTranslation(currentLang, 'header_pilot')}
             </span>
             <button
               onClick={() => {
@@ -53,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className="text-xs font-semibold text-[#914d00] hover:underline cursor-pointer"
             >
-              View Protocol
+              {getTranslation(currentLang, 'header_protocol')}
             </button>
           </div>
         </div>
@@ -71,14 +71,14 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-heading text-xl font-bold text-[#006070] tracking-tight">
-                  Nirvana
+                  {getTranslation(currentLang, 'app_name') || 'Nirvana'}
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-[#E3F1F4] text-[#006070] text-[11px] font-semibold">
-                  Hyperlocal Climate Alerts
+                  {getTranslation(currentLang, 'header_tagline')}
                 </span>
               </div>
               <span className="text-[11px] text-[#6F6A60] hidden md:block">
-                Community Resilience &amp; Early Action Network
+                {getTranslation(currentLang, 'header_network')}
               </span>
             </div>
           </div>
@@ -89,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
               {getTranslation(currentLang, 'live_risk_map')}
             </a>
             <a href="#monitor-section" className="px-3.5 py-1.5 rounded-full text-xs font-medium text-[#2B2A28] hover:bg-[#FFFFFF] hover:shadow-sm transition-all">
-              Street Telemetry
+              {getTranslation(currentLang, 'header_street_telemetry')}
             </a>
             <a href="#verified-shelters" className="px-3.5 py-1.5 rounded-full text-xs font-medium text-[#2B2A28] hover:bg-[#FFFFFF] hover:shadow-sm transition-all">
               {getTranslation(currentLang, 'find_shelters')}
@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Live sync pill */}
             <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E6F5ED] text-[#2B2A28] text-xs font-medium">
               <span className="w-2 h-2 rounded-full bg-[#4CAF7A] animate-pulse"></span>
-              <span>Live IMD/NDMA</span>
+              <span>{getTranslation(currentLang, 'header_live_imd')}</span>
             </div>
 
             {/* Simple Mode Toggle */}
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Toggle Ultra-Minimal Large Text View for Elderly / Low-Literacy"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Simple Mode</span>
+              <span className="hidden sm:inline">{getTranslation(currentLang, 'header_simple_mode')}</span>
             </button>
 
             {/* Language Switcher Pill */}
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>{isCommandView ? 'Citizen View' : 'Municipal Command'}</span>
+              <span>{isCommandView ? getTranslation(currentLang, 'header_citizen_view') : getTranslation(currentLang, 'header_command_view')}</span>
             </button>
 
             {/* Primary Action Button */}

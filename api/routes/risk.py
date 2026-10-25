@@ -175,3 +175,25 @@ def explain_risk(cell_id: str = Query(...)):
             "last_updated": "2026-10-25T18:10:00Z"
         }
     }
+
+@router.get("/{ward_id}")
+def get_ward_risk_by_id(ward_id: str, horizon: str = Query("now", pattern="^(now|6h|24h|72h)$")):
+    """
+    Returns specific ward risk scores, flood depth cm, heat index, and factors.
+    """
+    data = load_wards_geojson()
+    matched = next((f for f in data["features"] if f.get("id") == ward_id or f["properties"].get("ward_id") == ward_id), None)
+    if not matched:
+        raise HTTPException(status_code=404, detail=f"Ward {ward_id} not found")
+    props = matched["properties"]
+    return {
+        "ward_id": props["ward_id"],
+        "name": props["name"],
+        "horizon": horizon,
+        "flood_score": props.get("flood_score", 84),
+        "flood_depth_cm": props.get("flood_depth_cm", 28),
+        "heat_score": props.get("heat_score", 42),
+        "heat_index_c": 39.5,
+        "top_factors": props.get("top_factors", ["Shah Hatim culvert inlet choked", "Low basin depression"])
+    }
+

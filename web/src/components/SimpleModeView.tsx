@@ -52,17 +52,19 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
       {/* Top Simple Header */}
       <div className="w-full max-w-2xl flex items-center justify-between pb-4 border-b-2 border-[#EADBCA]">
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-black text-[#006070]">Nirvana</span>
+          <span className="text-2xl font-black text-[#006070]">
+            {getTranslation(currentLang, 'app_name') || 'Nirvana'}
+          </span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-[#EE7B30] text-white font-bold">
-            SIMPLE MODE
+            {getTranslation(currentLang, 'simple_badge')}
           </span>
         </div>
         <button
           onClick={onExitSimpleMode}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border-2 border-[#EADBCA] text-xs font-bold text-[#1c1b1a] hover:bg-[#F3EBDD]"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border-2 border-[#EADBCA] text-xs font-bold text-[#1c1b1a] hover:bg-[#F3EBDD] cursor-pointer"
         >
           <EyeOff className="w-4 h-4" />
-          <span>Exit Simple View</span>
+          <span>{getTranslation(currentLang, 'exit_simple_view')}</span>
         </button>
       </div>
 
@@ -86,13 +88,13 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">
-            {isDanger ? 'DANGER: EVACUATE NOW' : 'SAFE: STAY INDOORS'}
+            {isDanger ? getTranslation(currentLang, 'danger_evacuate') : getTranslation(currentLang, 'safe_stay_indoors')}
           </h1>
           <p className="text-xl font-bold text-[#1c1b1a] mb-1">
             {wardName}
           </p>
           <p className="text-lg text-[#6F6A60]">
-            Expected Water Depth: <strong className="text-[#1c1b1a] text-2xl">{depthCm} cm</strong>
+            {getTranslation(currentLang, 'expected_water_depth')} <strong className="text-[#1c1b1a] text-2xl">{depthCm} cm</strong>
           </p>
         </div>
 
@@ -106,19 +108,19 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
           }`}
         >
           <Volume2 className="w-8 h-8" />
-          <span>{speaking ? 'STOP VOICE' : '🔊 LISTEN VOICE ADVISORY'}</span>
+          <span>{speaking ? getTranslation(currentLang, 'stop_voice') : getTranslation(currentLang, 'listen_voice')}</span>
         </button>
 
         {/* Nearest Safe Shelter Giant Card */}
         <div className="p-6 rounded-3xl bg-white border-2 border-[#EADBCA] shadow-level1">
           <span className="text-xs font-bold uppercase tracking-wider text-[#4CAF7A] block mb-1">
-            NEAREST SAFE HIGHER-GROUND SHELTER
+            {getTranslation(currentLang, 'nearest_shelter_badge')}
           </span>
           <h2 className="text-2xl font-black text-[#1c1b1a] mb-2">
             {nearestShelterName}
           </h2>
           <p className="text-sm font-medium text-[#6F6A60] mb-4">
-            Safe from floodwaters • Free water &amp; medical beds
+            {getTranslation(currentLang, 'shelter_safe_note')}
           </p>
 
           <a
@@ -126,7 +128,7 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
             className="w-full py-4 rounded-2xl bg-[#F3EBDD] hover:bg-[#EADBCA] text-[#1c1b1a] text-lg font-bold flex items-center justify-center gap-2 border border-[#EADBCA]"
           >
             <PhoneCall className="w-6 h-6 text-[#1F7A8C]" />
-            <span>Call Shelter ({nearestShelterContact})</span>
+            <span>{getTranslation(currentLang, 'call_shelter')} ({nearestShelterContact})</span>
           </a>
         </div>
 
@@ -136,7 +138,7 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
             href="tel:112"
             className="p-5 rounded-2xl bg-[#D9453D] hover:bg-[#b8332c] text-white text-center flex flex-col items-center justify-center shadow-sm"
           >
-            <span className="text-xs uppercase font-bold tracking-wider">Police &amp; Fire</span>
+            <span className="text-xs uppercase font-bold tracking-wider">{getTranslation(currentLang, 'helpline_police_fire')}</span>
             <span className="text-3xl font-black">112</span>
           </a>
 
@@ -144,7 +146,7 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
             href="tel:108"
             className="p-5 rounded-2xl bg-[#EE7B30] hover:bg-[#d9671e] text-white text-center flex flex-col items-center justify-center shadow-sm"
           >
-            <span className="text-xs uppercase font-bold tracking-wider">Ambulance</span>
+            <span className="text-xs uppercase font-bold tracking-wider">{getTranslation(currentLang, 'helpline_ambulance')}</span>
             <span className="text-3xl font-black">108</span>
           </a>
         </div>
@@ -152,7 +154,7 @@ export const SimpleModeView: React.FC<SimpleModeViewProps> = ({
       </div>
 
       <div className="text-xs text-[#6F6A60] text-center pt-4">
-        Nirvana Simple Mode • High contrast tactile design for senior citizens
+        {getTranslation(currentLang, 'simple_mode_footer')}
       </div>
     </div>
   );
