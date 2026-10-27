@@ -20,9 +20,11 @@ import {
   ZoomOut,
   Crosshair,
   CheckCircle2,
-  Phone
+  Phone,
+  Droplets
 } from 'lucide-react';
 import maplibregl from 'maplibre-gl';
+import { HYDERABAD_DRAINS } from '../lib/drains';
 
 interface MapComponentProps {
   wards: WardFeature[];
@@ -137,6 +139,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const [activeLayers, setActiveLayers] = useState({
     flood: true,
     heat: false,
+    drains: true,
     shelters: true,
     reports: true,
     wards: true
@@ -192,6 +195,146 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     };
   };
 
+  // Unified helper to attach Wards and Drains sources, layers, and interactive handlers
+  const setupLayersAndListeners = (map: maplibregl.Map) => {
+    // 1. Wards Source & Layers
+    if (!map.getSource('wards-source')) {
+      map.addSource('wards-source', {
+        type: 'geojson',
+        data: getWardsGeoJSON()
+      });
+
+      map.addLayer({
+        id: 'wards-fill',
+        type: 'fill',
+        source: 'wards-source',
+        layout: {
+          visibility: activeLayers.wards ? 'visible' : 'none'
+        },
+        paint: {
+          'fill-color': ['get', 'fill_color'],
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            0.55,
+            0.32
+          ]
+        }
+      });
+
+      map.addLayer({
+        id: 'wards-line',
+        type: 'line',
+        source: 'wards-source',
+        layout: {
+          visibility: activeLayers.wards ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': ['get', 'fill_color'],
+          'line-width': 1.8,
+          'line-opacity': 0.85
+        }
+      });
+
+      map.addLayer({
+        id: 'wards-selected-outline',
+        type: 'line',
+        source: 'wards-source',
+        filter: ['==', ['get', 'ward_id'], selectedWardId],
+        layout: {
+          visibility: activeLayers.wards ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': '#006070',
+          'line-width': 3.5,
+          'line-dasharray': [3, 1.5]
+        }
+      });
+
+      // Ward Selection Click Listener
+      map.on('click', 'wards-fill', (e) => {
+        if (e.features && e.features[0]) {
+          const wardId = e.features[0].properties?.ward_id;
+          if (wardId) {
+            onSelectWard(wardId);
+          }
+        }
+      });
+
+      // Hover Pointer and Visual State Listeners
+      let hoveredWardId: string | number | null = null;
+      map.on('mousemove', 'wards-fill', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        if (e.features && e.features.length > 0) {
+          if (hoveredWardId !== null) {
+            map.setFeatureState({ source: 'wards-source', id: hoveredWardId }, { hover: false });
+          }
+          hoveredWardId = e.features[0].id ?? null;
+          if (hoveredWardId !== null) {
+            map.setFeatureState({ source: 'wards-source', id: hoveredWardId }, { hover: true });
+          }
+        }
+      });
+
+      map.on('mouseleave', 'wards-fill', () => {
+        map.getCanvas().style.cursor = '';
+        if (hoveredWardId !== null) {
+          map.setFeatureState({ source: 'wards-source', id: hoveredWardId }, { hover: false });
+        }
+        hoveredWardId = null;
+      });
+    }
+
+    // 2. Stormwater Drainage Network (Musi River & GHMC Nalas)
+    if (!map.getSource('drains-source')) {
+      map.addSource('drains-source', {
+        type: 'geojson',
+        data: HYDERABAD_DRAINS as any
+      });
+
+      map.addLayer({
+        id: 'drains-line',
+        type: 'line',
+        source: 'drains-source',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+          visibility: activeLayers.drains ? 'visible' : 'none'
+        },
+        paint: {
+          'line-color': '#00A3C4',
+          'line-width': [
+            'case',
+            ['==', ['get', 'type'], 'Primary River'],
+            4.0,
+            2.4
+          ],
+          'line-opacity': 0.85
+        }
+      });
+
+      map.on('click', 'drains-line', (e) => {
+        if (e.features && e.features[0]) {
+          const p = e.features[0].properties;
+          const conditionColor = p?.condition === 'blocked' ? '#D9453D' : p?.condition === 'partially blocked' ? '#EE7B30' : '#4CAF7A';
+          new maplibregl.Popup({ offset: 12 })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-size: 11px; text-align: left; min-width: 160px;">
+                <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #006070;">Municipal Drainage Channel</span>
+                <strong style="display: block; color: #1c1b1a; font-size: 12px; margin-top: 2px;">${p?.name || 'Storm Nala'}</strong>
+                <div style="color: #6F6A60; font-size: 10px; margin-top: 3px;">
+                  Type: <strong>${p?.type || 'Drain'}</strong> | Condition: <strong style="color: ${conditionColor}">${p?.condition || 'Inspected'}</strong>
+                </div>
+                ${p?.water_level_m ? `<div style="font-size: 10px; color: #1c1b1a; margin-top: 2px;">Live Depth: <strong>${p.water_level_m}m</strong> (Danger: ${p.danger_level_m}m)</div>` : ''}
+              </div>
+            `)
+            .addTo(map);
+        }
+      });
+    }
+  };
+
   // Initialize MapLibre GL instance
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -230,86 +373,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
     map.on('load', () => {
       setMapLoaded(true);
-
-      // Add wards GeoJSON source
-      map.addSource('wards-source', {
-        type: 'geojson',
-        data: getWardsGeoJSON()
-      });
-
-      // Ward Polygon Fill Layer
-      map.addLayer({
-        id: 'wards-fill',
-        type: 'fill',
-        source: 'wards-source',
-        paint: {
-          'fill-color': ['get', 'fill_color'],
-          'fill-opacity': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            0.55,
-            0.32
-          ]
-        }
-      });
-
-      // Ward Boundary Line Layer
-      map.addLayer({
-        id: 'wards-line',
-        type: 'line',
-        source: 'wards-source',
-        paint: {
-          'line-color': ['get', 'fill_color'],
-          'line-width': 1.8,
-          'line-opacity': 0.85
-        }
-      });
-
-      // Selected Ward Highlight Outline
-      map.addLayer({
-        id: 'wards-selected-outline',
-        type: 'line',
-        source: 'wards-source',
-        filter: ['==', ['get', 'ward_id'], selectedWardId],
-        paint: {
-          'line-color': '#006070',
-          'line-width': 3.5,
-          'line-dasharray': [3, 1.5]
-        }
-      });
-
-      // Click to select ward
-      map.on('click', 'wards-fill', (e) => {
-        if (e.features && e.features[0]) {
-          const wardId = e.features[0].properties?.ward_id;
-          if (wardId) {
-            onSelectWard(wardId);
-          }
-        }
-      });
-
-      // Pointer cursor on hover
-      let hoveredWardId: string | number | null = null;
-      map.on('mousemove', 'wards-fill', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        if (e.features && e.features.length > 0) {
-          if (hoveredWardId !== null) {
-            map.setFeatureState({ source: 'wards-source', id: hoveredWardId }, { hover: false });
-          }
-          hoveredWardId = e.features[0].id ?? null;
-          if (hoveredWardId !== null) {
-            map.setFeatureState({ source: 'wards-source', id: hoveredWardId }, { hover: true });
-          }
-        }
-      });
-
-      map.on('mouseleave', 'wards-fill', () => {
-        map.getCanvas().style.cursor = '';
-        if (hoveredWardId !== null) {
-          map.setFeatureState({ source: 'wards-source', id: hoveredWardId }, { hover: false });
-        }
-        hoveredWardId = null;
-      });
+      setupLayersAndListeners(map);
     });
 
     mapRef.current = map;
@@ -329,57 +393,52 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, []);
 
-  // Handle Basemap Style Switch
+  // Handle Basemap Style Switch: Persist all sources, layers, and listeners across style changes
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
     mapRef.current.setStyle(TILE_STYLES[activeBasemap]);
 
-    // Re-add sources and layers after style changes
+    // Re-attach sources, layers, and listeners once the new style finishes loading
     mapRef.current.once('style.load', () => {
       const map = mapRef.current;
       if (!map) return;
-
-      if (!map.getSource('wards-source')) {
-        map.addSource('wards-source', {
-          type: 'geojson',
-          data: getWardsGeoJSON()
-        });
-
-        map.addLayer({
-          id: 'wards-fill',
-          type: 'fill',
-          source: 'wards-source',
-          paint: {
-            'fill-color': ['get', 'fill_color'],
-            'fill-opacity': 0.32
-          }
-        });
-
-        map.addLayer({
-          id: 'wards-line',
-          type: 'line',
-          source: 'wards-source',
-          paint: {
-            'line-color': ['get', 'fill_color'],
-            'line-width': 1.8,
-            'line-opacity': 0.85
-          }
-        });
-
-        map.addLayer({
-          id: 'wards-selected-outline',
-          type: 'line',
-          source: 'wards-source',
-          filter: ['==', ['get', 'ward_id'], selectedWardId],
-          paint: {
-            'line-color': '#006070',
-            'line-width': 3.5,
-            'line-dasharray': [3, 1.5]
-          }
-        });
-      }
+      setupLayersAndListeners(map);
     });
   }, [activeBasemap]);
+
+  // Synchronize layer visibility dynamically
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+
+    if (mapRef.current.getLayer('drains-line')) {
+      mapRef.current.setLayoutProperty(
+        'drains-line',
+        'visibility',
+        activeLayers.drains ? 'visible' : 'none'
+      );
+    }
+    if (mapRef.current.getLayer('wards-fill')) {
+      mapRef.current.setLayoutProperty(
+        'wards-fill',
+        'visibility',
+        activeLayers.wards ? 'visible' : 'none'
+      );
+    }
+    if (mapRef.current.getLayer('wards-line')) {
+      mapRef.current.setLayoutProperty(
+        'wards-line',
+        'visibility',
+        activeLayers.wards ? 'visible' : 'none'
+      );
+    }
+    if (mapRef.current.getLayer('wards-selected-outline')) {
+      mapRef.current.setLayoutProperty(
+        'wards-selected-outline',
+        'visibility',
+        activeLayers.wards ? 'visible' : 'none'
+      );
+    }
+  }, [activeLayers.drains, activeLayers.wards, mapLoaded]);
 
   // Update GeoJSON source when wards, rainfall, heat, or selection changes
   useEffect(() => {
@@ -493,9 +552,14 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             <div style="font-size: 10px; color: #1c1b1a; margin-bottom: 4px;">
               Occupancy: <strong>${shelter.current_occupancy}/${shelter.capacity} beds</strong> (${occupancyPct}%)
             </div>
-            <a href="tel:${shelter.contact}" style="display: block; text-align: center; background-color: #1F7A8C; color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 9999px; text-decoration: none; margin-top: 6px;">
-              📞 Call ${shelter.contact}
-            </a>
+            <div style="display: flex; gap: 4px; margin-top: 6px;">
+              <a href="tel:${shelter.contact}" style="flex: 1; text-align: center; background-color: #1F7A8C; color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 4px 6px; border-radius: 9999px; text-decoration: none;">
+                📞 Call
+              </a>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${shelter.lat},${shelter.lng}&travelmode=walking" target="_blank" rel="noopener noreferrer" style="flex: 1; text-align: center; background-color: #4CAF7A; color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 4px 6px; border-radius: 9999px; text-decoration: none;">
+                🚶 Route
+              </a>
+            </div>
           </div>
         `);
 
@@ -653,6 +717,19 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           >
             <Flame className="w-3.5 h-3.5" />
             <span>{getTranslation(currentLang, 'layer_heat')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => toggleLayer('drains')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer ${
+              activeLayers.drains
+                ? 'bg-[#E0F7FA] text-[#006070] border-[#0097A7] shadow-sm font-bold'
+                : 'bg-white text-[#6F6A60] border-[#EADBCA] hover:bg-[#F3EBDD]'
+            }`}
+          >
+            <Droplets className="w-3.5 h-3.5 text-[#0097A7]" />
+            <span>Drains &amp; Nalas</span>
           </button>
 
           <button
@@ -833,6 +910,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           <span className="text-[11px] font-semibold text-[#6F6A60]">+72h</span>
         </div>
       </div>
+
+      {/* Micro-watershed Modeling Disclaimer */}
+      <p className="mt-3 text-[11px] text-[#8F8A80] text-center sm:text-left italic">
+        * Micro-watershed boundaries represent pilot hydrologic modeling zones. Follow local emergency personnel for official evacuation routes.
+      </p>
     </div>
   );
 };

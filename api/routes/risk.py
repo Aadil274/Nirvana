@@ -1,10 +1,14 @@
 import json
 import os
-from typing import Optional, List
+import logging
+from typing import Optional, List, Tuple
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 
 from ml.model import FloodRiskEngine, HeatRiskEngine
+from api.services.weather_service import weather_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/risk", tags=["Risk Intelligence"])
 
@@ -16,14 +20,40 @@ def load_wards_geojson():
     with open(WARDS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def compute_ward_risk(props: dict, horizon: str = "now", simulated_rain_mm: Optional[float] = None, simulated_temp_c: Optional[float] = None) -> dict:
+def extract_weather_parameters(weather_dict: dict) -> Tuple[float, float, float]:
+    """
+    Extracts 3-hour expected rainfall, current temperature, and relative humidity
+    from WeatherService structured output.
+    """
+    hourly_list = weather_dict.get("hourly", [])
+    if isinstance(hourly_list, list) and len(hourly_list) >= 3:
+        rain_3h = sum(float(item.get("rain_mm", 0.0) or 0.0) for item in hourly_list[:3])
+    else:
+        rain_3h = float(weather_dict.get("current", {}).get("precipitation_mm", 0.0) or 0.0) * 2.5
+    temp_c = float(weather_dict.get("current", {}).get("temperature_c", 35.0))
+    hum_pct = float(weather_dict.get("current", {}).get("humidity_pct", 55.0))
+    return rain_3h, temp_c, hum_pct
+
+def compute_ward_risk(
+    props: dict,
+    horizon: str = "now",
+    simulated_rain_mm: Optional[float] = None,
+    simulated_temp_c: Optional[float] = None,
+    live_rain_mm: Optional[float] = None,
+    live_temp_c: Optional[float] = None,
+    live_humidity_pct: Optional[float] = None
+) -> dict:
     """
     Dynamically computes flood & heat risk scores, depth, level, confidence, and explainability factors
-    for a given ward based on physical topography and weather parameters.
+    for a given ward based on physical topography, ML prediction, and live/simulated weather parameters.
     """
-    rain_3h = simulated_rain_mm if simulated_rain_mm is not None else (
-        55.0 if props["ward_id"] in ["ward-72", "ward-71", "ward-55"] else 22.0
-    )
+    if simulated_rain_mm is not None:
+        rain_3h = simulated_rain_mm
+    elif live_rain_mm is not None:
+        rain_3h = live_rain_mm
+    else:
+        rain_3h = 55.0 if props["ward_id"] in ["ward-72", "ward-71", "ward-55"] else 22.0
+
     if horizon == "6h":
         rain_3h *= 1.25
     elif horizon == "24h":
@@ -31,8 +61,15 @@ def compute_ward_risk(props: dict, horizon: str = "now", simulated_rain_mm: Opti
     elif horizon == "72h":
         rain_3h *= 0.30
 
-    temp_c = simulated_temp_c if simulated_temp_c is not None else (
-        41.5 if props["ward_id"] == "ward-48" else 35.0
+    if simulated_temp_c is not None:
+        temp_c = simulated_temp_c
+    elif live_temp_c is not None:
+        temp_c = live_temp_c
+    else:
+        temp_c = 41.5 if props["ward_id"] == "ward-48" else 35.0
+
+    humidity_pct = live_humidity_pct if live_humidity_pct is not None else (
+        58.0 if rain_3h > 20 else 42.0
     )
 
     flood_features = {
@@ -47,13 +84,13 @@ def compute_ward_risk(props: dict, horizon: str = "now", simulated_rain_mm: Opti
         "lake_overflow_risk": props["lake_overflow_risk"]
     }
 
-    f_score, f_level, f_depth, f_conf = FloodRiskEngine.calculate_baseline(flood_features)
+    f_score, f_level, f_depth, f_conf = FloodRiskEngine.calculate_blended_risk(flood_features)
     factors = FloodRiskEngine.explain_factors(flood_features)
     contributions = FloodRiskEngine.explain_contributions(flood_features)
 
     heat_features = {
         "temp_c": temp_c,
-        "humidity_pct": 58.0 if rain_3h > 20 else 42.0,
+        "humidity_pct": humidity_pct,
         "impervious_fraction": props["impervious_fraction"],
         "outdoor_workers_pct": props["outdoor_workers_pct"],
         "elderly_pct": props["elderly_pct"]
@@ -84,14 +121,38 @@ def get_all_wards_risk(
     """
     Returns all 22 Hyderabad wards with live computed flood & heat risk scores,
     depth estimates, and explainability factors.
-    Supports 'what-if' simulation parameters (simulated_rain_mm and simulated_temp_c).
+    Supports 'what-if' simulation parameters (simulated_rain_mm and simulated_temp_c)
+    and fuses live Open-Meteo weather when simulations are omitted.
     """
+    live_rain_3h = None
+    live_temp = None
+    live_humidity = None
+    if simulated_rain_mm is None or simulated_temp_c is None:
+        try:
+            hyd_weather = weather_service.get_weather(17.3850, 78.4867)
+            calc_rain, calc_temp, calc_hum = extract_weather_parameters(hyd_weather)
+            if simulated_rain_mm is None:
+                live_rain_3h = calc_rain
+            if simulated_temp_c is None:
+                live_temp = calc_temp
+                live_humidity = calc_hum
+        except Exception as e:
+            logger.warning("Could not retrieve live weather for wards: %s", e)
+
     data = load_wards_geojson()
     features = data.get("features", [])
 
     results = []
     for feat in features:
-        props = compute_ward_risk(feat["properties"], horizon=horizon, simulated_rain_mm=simulated_rain_mm, simulated_temp_c=simulated_temp_c)
+        props = compute_ward_risk(
+            feat["properties"],
+            horizon=horizon,
+            simulated_rain_mm=simulated_rain_mm,
+            simulated_temp_c=simulated_temp_c,
+            live_rain_mm=live_rain_3h,
+            live_temp_c=live_temp,
+            live_humidity_pct=live_humidity
+        )
         results.append({
             "type": "Feature",
             "id": feat["id"],
@@ -134,7 +195,23 @@ def get_risk_at_location(
         best_ward = data["features"][0]
         min_dist_km = 0.0
 
-    computed = compute_ward_risk(best_ward["properties"], horizon=horizon)
+    # Retrieve live weather at requested coordinates
+    live_rain_3h = None
+    live_temp = None
+    live_humidity = None
+    try:
+        loc_weather = weather_service.get_weather(lat, lng)
+        live_rain_3h, live_temp, live_humidity = extract_weather_parameters(loc_weather)
+    except Exception as exc:
+        logger.warning("Could not fetch live weather for coordinates (%s, %s): %s", lat, lng, exc)
+
+    computed = compute_ward_risk(
+        best_ward["properties"],
+        horizon=horizon,
+        live_rain_mm=live_rain_3h,
+        live_temp_c=live_temp,
+        live_humidity_pct=live_humidity
+    )
     coverage_note = None
     if min_dist_km > 25.0:
         coverage_note = f"Coordinates are {round(min_dist_km, 1)}km from central Hyderabad. Displaying nearest pilot telemetry from {computed['name']}."
@@ -196,7 +273,25 @@ def get_ward_risk_by_id(ward_id: str, horizon: str = Query("now", pattern="^(now
     if not matched:
         raise HTTPException(status_code=404, detail=f"Ward {ward_id} not found")
     
-    computed = compute_ward_risk(matched["properties"], horizon=horizon)
+    live_rain_3h = None
+    live_temp = None
+    live_humidity = None
+    try:
+        coords = matched["geometry"]["coordinates"][0]
+        centroid_lng = sum(p[0] for p in coords) / len(coords)
+        centroid_lat = sum(p[1] for p in coords) / len(coords)
+        loc_weather = weather_service.get_weather(centroid_lat, centroid_lng)
+        live_rain_3h, live_temp, live_humidity = extract_weather_parameters(loc_weather)
+    except Exception as exc:
+        logger.warning("Could not fetch live weather for ward %s: %s", ward_id, exc)
+
+    computed = compute_ward_risk(
+        matched["properties"],
+        horizon=horizon,
+        live_rain_mm=live_rain_3h,
+        live_temp_c=live_temp,
+        live_humidity_pct=live_humidity
+    )
     return {
         "ward_id": computed["ward_id"],
         "name": computed["name"],

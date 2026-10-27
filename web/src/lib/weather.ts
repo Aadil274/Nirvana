@@ -8,9 +8,7 @@
 
 import { WeatherData, CurrentWeather, HourlyForecastItem, DailyForecastItem } from '../types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')}/api/v1`
-  : 'http://127.0.0.1:8000/api/v1';
+import { API_BASE } from './api';
 
 // WMO Weather code dictionary for client-side fallback
 const WMO_MAP: Record<number, { desc: string; category: string; icon: string }> = {

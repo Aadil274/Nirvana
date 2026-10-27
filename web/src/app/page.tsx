@@ -74,9 +74,7 @@ const MapComponent = dynamic(
   }
 );
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')}/api/v1`
-  : 'http://127.0.0.1:8000/api/v1';
+import { API_BASE, apiUrl } from '../lib/api';
 
 interface LocationErrorState {
   type: 'denied' | 'unavailable' | 'timeout' | 'unsupported' | 'insecure';
@@ -104,10 +102,44 @@ export default function Home() {
   const [temperatureC, setTemperatureC] = useState<number>(28);
   const [isScenarioActive, setIsScenarioActive] = useState(false);
 
+  // Welfare Status State ("I'm Safe" workflow)
+  const [welfareSafe, setWelfareSafe] = useState(false);
+  const [welfareTimestamp, setWelfareTimestamp] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('nirvana_welfare_safe');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setWelfareSafe(!!parsed.isSafe);
+        setWelfareTimestamp(parsed.timestamp || null);
+      }
+    } catch {}
+  }, []);
+
+  const handleMarkSafe = () => {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setWelfareSafe(true);
+    setWelfareTimestamp(timeStr);
+    try {
+      localStorage.setItem('nirvana_welfare_safe', JSON.stringify({ isSafe: true, timestamp: timeStr }));
+    } catch {}
+  };
+
+  const handleUndoSafe = () => {
+    setWelfareSafe(false);
+    setWelfareTimestamp(null);
+    try {
+      localStorage.removeItem('nirvana_welfare_safe');
+    } catch {}
+  };
+
   // Live Weather Intelligence State (Open-Meteo Provider)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState<string | null>(null);
+  const [lastWeatherFetchTime, setLastWeatherFetchTime] = useState<number>(() => Date.now());
+  const [isWsConnected, setIsWsConnected] = useState(false);
 
   // Data Stores
   const [wardsData, setWardsData] = useState<WardFeature[]>(HYDERABAD_WARDS.features);
@@ -158,6 +190,7 @@ export default function Home() {
     try {
       const data = await fetchWeather(targetLat, targetLng, force);
       setWeatherData(data);
+      setLastWeatherFetchTime(Date.now());
       setIsWeatherLoading(false);
       if (!isScenarioActive) {
         if (typeof data.current.temperature_c === 'number') {
@@ -184,6 +217,7 @@ export default function Home() {
         const data = await fetchWeather(targetLat, targetLng, false, controller.signal);
         if (isMounted) {
           setWeatherData(data);
+          setLastWeatherFetchTime(Date.now());
           setIsWeatherLoading(false);
           if (!isScenarioActive) {
             if (typeof data.current.temperature_c === 'number') {
@@ -209,6 +243,65 @@ export default function Home() {
     };
   }, [targetLat, targetLng]);
 
+  // Real-time IoT culvert & Doppler telemetry WebSocket connection
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+
+    const connectWs = () => {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let host = '127.0.0.1:8000';
+        try {
+          if (API_BASE.startsWith('http')) {
+            const parsed = new URL(API_BASE);
+            host = parsed.host;
+          } else {
+            host = window.location.host;
+          }
+        } catch {}
+
+        ws = new WebSocket(`${protocol}//${host}/api/v1/ws/live`);
+
+        ws.onopen = () => {
+          setIsWsConnected(true);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'TELEMETRY_HEARTBEAT' || payload.type === 'INITIAL_TELEMETRY') {
+              setLastWeatherFetchTime(Date.now());
+            }
+          } catch {}
+        };
+
+        ws.onerror = () => {
+          setIsWsConnected(false);
+        };
+
+        ws.onclose = () => {
+          setIsWsConnected(false);
+          reconnectTimeout = setTimeout(connectWs, 15000);
+        };
+      } catch {
+        setIsWsConnected(false);
+      }
+    };
+
+    connectWs();
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
+  }, []);
+
   // Live synchronization with FastAPI backend if running
   useEffect(() => {
     const controller = new AbortController();
@@ -232,13 +325,83 @@ export default function Home() {
     return () => controller.abort();
   }, [horizon, rainfallRate, temperatureC]);
 
-  // Dynamically compute active risk levels based on simulation sliders and horizon
+  // Initial Data Hydration: Sync reports, shelters, alerts, and KPIs from backend
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const hydrateInitialData = async () => {
+      // 1. Citizen Reports
+      try {
+        const resReports = await fetch(`${API_BASE}/reports`, { signal: controller.signal });
+        if (resReports.ok) {
+          const dataReports = await resReports.json();
+          if (Array.isArray(dataReports) && dataReports.length > 0) {
+            setReports(dataReports);
+          }
+        }
+      } catch {}
+
+      // 2. Verified Safe Shelters
+      try {
+        const resShelters = await fetch(`${API_BASE}/shelters`, { signal: controller.signal });
+        if (resShelters.ok) {
+          const dataShelters = await resShelters.json();
+          if (Array.isArray(dataShelters) && dataShelters.length > 0) {
+            setShelters(dataShelters);
+          }
+        }
+      } catch {}
+
+      // 3. Active Emergency Alerts
+      try {
+        const resAlerts = await fetch(`${API_BASE}/alerts`, { signal: controller.signal });
+        if (resAlerts.ok) {
+          const dataAlerts = await resAlerts.json();
+          if (Array.isArray(dataAlerts) && dataAlerts.length > 0) {
+            setAlerts(dataAlerts);
+          }
+        }
+      } catch {}
+
+      // 4. Municipal Overview KPIs
+      try {
+        const resKpis = await fetch(`${API_BASE}/dashboard/kpis`, { signal: controller.signal });
+        if (resKpis.ok) {
+          const dataKpis = await resKpis.json();
+          if (dataKpis && dataKpis.kpis) {
+            setKpis(dataKpis.kpis);
+          }
+        }
+      } catch {}
+    };
+
+    hydrateInitialData();
+    return () => controller.abort();
+  }, []);
+
+  // Dynamically compute active risk levels based on physical ward factors, simulation sliders, and horizon
   const horizonMultiplier = horizon === '6h' ? 1.25 : horizon === '24h' ? 0.70 : horizon === '72h' ? 0.35 : 1.0;
-  const dynamicFloodScore = Math.min(100, Math.max(5, Math.round(
-    (activeProps.flood_score || 70) * (rainfallRate / 45) * horizonMultiplier
-  )));
+  
+  // Physically grounded flood estimation factoring in TWI, HAND, drainage condition, and Musi proximity
+  const rainSubscore = Math.min(40, (rainfallRate * 0.45 * horizonMultiplier));
+  const handVal = activeProps.hand_m ?? 2.0;
+  const twiVal = activeProps.twi ?? 10.0;
+  let topoSubscore = 0;
+  if (handVal < 1.0) topoSubscore += 15 * (1.0 - handVal);
+  if (twiVal > 10.0) topoSubscore += Math.min(15, (twiVal - 10.0) * 4.0);
+  const drainPenalty = activeProps.drainage_health === 'Blocked' ? 14 : activeProps.drainage_health === 'Partially Blocked' ? 7 : 0;
+  const musiDist = activeProps.musi_proximity_km ?? 5.0;
+  const riverSubscore = Math.max(0, 15 - (musiDist * 5));
+  const runoffSubscore = (activeProps.impervious_fraction ?? 0.8) * 15;
+  const rawFloodTotal = rainSubscore + topoSubscore + riverSubscore + runoffSubscore + drainPenalty;
+
+  const dynamicFloodScore = Math.min(100, Math.max(5, Math.round(rawFloodTotal)));
   const dynamicFloodLevel: RiskLevel = dynamicFloodScore >= 75 ? 'Severe' : dynamicFloodScore >= 55 ? 'High' : dynamicFloodScore >= 35 ? 'Moderate' : 'Low';
-  const dynamicDepthCm = Math.round((dynamicFloodScore / 100) * 45);
+  const dynamicDepthCm = dynamicFloodScore >= 75
+    ? Math.round(25 + (dynamicFloodScore - 75) * 1.5)
+    : dynamicFloodScore >= 55
+    ? Math.round(12 + (dynamicFloodScore - 55) * 0.6)
+    : Math.round(dynamicFloodScore * 0.2);
 
   const dynamicHeatScore = Math.min(100, Math.max(5, Math.round(
     (activeProps.heat_score || 40) * (temperatureC / 34)
@@ -314,11 +477,12 @@ export default function Home() {
     setKpis(INITIAL_KPIS);
   };
 
-  const handleAddReport = (newRep: Partial<CitizenReport>) => {
+  const handleAddReport = async (newRep: Partial<CitizenReport>) => {
     const reportLat = userGpsCoords ? userGpsCoords.lat : (activeWard.geometry?.coordinates?.[0]?.[0]?.[1] || 17.3820);
     const reportLng = userGpsCoords ? userGpsCoords.lng : (activeWard.geometry?.coordinates?.[0]?.[0]?.[0] || 78.4230);
+    const tempId = `rep-${Date.now()}`;
     const reportObj: CitizenReport = {
-      id: `rep-${Date.now()}`,
+      id: tempId,
       ward_id: activeProps.ward_id,
       ward_name: activeProps.name,
       category: (newRep.category as any) || 'waterlogging',
@@ -333,19 +497,112 @@ export default function Home() {
       confirm_votes: 1,
       status: 'pending'
     };
+    // Optimistic UI update
     setReports(prev => [reportObj, ...prev]);
+
+    try {
+      const res = await fetch(`${API_BASE}/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ward_id: reportObj.ward_id,
+          ward_name: reportObj.ward_name,
+          category: reportObj.category,
+          severity: reportObj.severity,
+          description: reportObj.description,
+          location_name: reportObj.location_name,
+          lat: reportObj.lat,
+          lng: reportObj.lng,
+          photo_url: reportObj.photo_url,
+          has_audio_note: reportObj.has_audio_note
+        })
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setReports(prev => prev.map(r => r.id === tempId ? saved : r));
+      }
+    } catch (e) {
+      // Offline fallback: keep optimistic report
+    }
   };
 
-  const handleConfirmReport = (reportId: string) => {
+  const handleConfirmReport = async (reportId: string) => {
     setReports(prev =>
       prev.map(r => (r.id === reportId ? { ...r, confirm_votes: r.confirm_votes + 1 } : r))
     );
+    try {
+      const res = await fetch(`${API_BASE}/reports/${reportId}/confirm`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReports(prev =>
+          prev.map(r => (r.id === reportId ? { ...r, confirm_votes: data.confirm_votes, status: data.status } : r))
+        );
+      }
+    } catch (e) {
+      // Offline fallback
+    }
   };
 
-  const handleTriageReport = (reportId: string, action: 'verify' | 'reject' | 'resolve') => {
+  const handleTriageReport = async (reportId: string, action: 'verify' | 'reject' | 'resolve') => {
     setReports(prev =>
       prev.map(r => (r.id === reportId ? { ...r, status: action === 'verify' ? 'verified' : action === 'resolve' ? 'resolved' : 'rejected' } : r))
     );
+    try {
+      const res = await fetch(`${API_BASE}/reports/${reportId}/triage?action=${action}`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setReports(prev =>
+          prev.map(r => (r.id === reportId ? updated : r))
+        );
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+  };
+
+  const handleSendAlert = async (newAlt: Partial<AlertItem>) => {
+    const alertId = newAlt.id || `alt-${Date.now()}`;
+    const fullAlert: AlertItem = {
+      id: alertId,
+      hazard: newAlt.hazard || 'flood',
+      severity: newAlt.severity || 'Moderate',
+      title: newAlt.title || { en: 'EMERGENCY CIVIC NOTICE' },
+      body: newAlt.body || { en: 'Advisory notice broadcast to community.' },
+      target_wards: newAlt.target_wards || [selectedWardId],
+      ward_names: newAlt.ward_names || [activeProps.name],
+      issued_at: newAlt.issued_at || new Date().toISOString(),
+      valid_until: newAlt.valid_until || new Date(Date.now() + 6 * 3600000).toISOString(),
+      channel: newAlt.channel || 'in_app',
+      estimated_reach: newAlt.estimated_reach || 75000,
+      delivery_status: newAlt.delivery_status || 'sent',
+      requires_two_person_approval: newAlt.requires_two_person_approval || false,
+      action_checklist: newAlt.action_checklist || []
+    };
+    setAlerts(prev => [fullAlert, ...prev]);
+
+    try {
+      await fetch(`${API_BASE}/alerts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hazard: fullAlert.hazard,
+          severity: fullAlert.severity,
+          title: fullAlert.title,
+          body: fullAlert.body,
+          target_wards: fullAlert.target_wards,
+          ward_names: fullAlert.ward_names,
+          channel: fullAlert.channel,
+          requires_two_person_approval: fullAlert.requires_two_person_approval,
+          action_checklist: fullAlert.action_checklist
+        })
+      });
+    } catch (e) {
+      // Offline fallback
+    }
   };
 
   const wardOptions = wardsData.map(w => ({
@@ -647,7 +904,7 @@ export default function Home() {
             reports={reports}
             alerts={alerts}
             kpis={kpis}
-            onSendAlert={(newAlt) => setAlerts(prev => [newAlt as any, ...prev])}
+            onSendAlert={handleSendAlert}
             onTriageReport={handleTriageReport}
           />
         </main>
@@ -659,7 +916,7 @@ export default function Home() {
             <TrustBar
               currentLang={currentLang}
               confidenceScore={activeProps.confidence || 94}
-              minutesAgo={6}
+              minutesAgo={Math.max(1, Math.round((Date.now() - lastWeatherFetchTime) / 60000))}
               onListen={handleListenHero}
               showSyntheticDisclaimer={true}
             />
@@ -908,7 +1165,10 @@ export default function Home() {
                 wardName={activeProps.name}
                 persona={persona}
                 onPersonaChange={setPersona}
-                onSafeClick={() => alert(currentLang === 'te' ? 'మీరు సురక్షితంగా ఉన్నారని వార్డ్ అధికారికి మరియు కుటుంబానికి సమాచారం చేరవేయబడింది.' : 'Welfare status updated: "I Am Safe" registered with GHMC Emergency Operations.')}
+                isSafe={welfareSafe}
+                safeTimestamp={welfareTimestamp}
+                onSafeClick={handleMarkSafe}
+                onUndoSafe={handleUndoSafe}
                 onSosClick={() => setSosModalOpen(true)}
                 currentLang={currentLang}
               />

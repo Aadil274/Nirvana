@@ -105,8 +105,12 @@ export const ShelterLocator: React.FC<ShelterLocatorProps> = ({
                     {isVerified ? getTranslation(currentLang, 'verified_by_muni') : getTranslation(currentLang, 'unverified')}
                   </span>
 
-                  <span className="text-xs font-bold text-[#1F7A8C] bg-[#E3F1F4] px-2 py-0.5 rounded-full">
-                    {shelter.distance_km} km ({shelter.walking_mins} min walk)
+                  <span 
+                    title="Direct radial distance estimate. Actual walking distance may vary based on flooded passages."
+                    className="text-xs font-bold text-[#1F7A8C] bg-[#E3F1F4] px-2 py-0.5 rounded-full inline-flex items-center gap-1 cursor-help"
+                  >
+                    <span>{shelter.distance_km} km (direct)</span>
+                    <span className="text-[#6F6A60] font-normal">• ~{shelter.walking_mins} min walk</span>
                   </span>
                 </div>
 
@@ -184,14 +188,15 @@ export const ShelterLocator: React.FC<ShelterLocatorProps> = ({
                   <Phone className="w-3.5 h-3.5 text-[#1F7A8C]" />
                   <span>{getTranslation(currentLang, 'call_shelter')}</span>
                 </a>
-                <button
-                  type="button"
-                  onClick={() => alert(`Navigation Route: Follow higher ground corridor via Military Road toward ${shelter.name}. Avoid low-lying Nadeem Colony culverts.`)}
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${shelter.lat},${shelter.lng}&travelmode=walking`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-[#1F7A8C] hover:bg-[#17606F] text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm"
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   <span>{getTranslation(currentLang, 'directions')}</span>
-                </button>
+                </a>
               </div>
             </div>
           );

@@ -12,6 +12,9 @@ interface SafetyChecklistProps {
   onSafeClick: () => void;
   onSosClick: () => void;
   currentLang: SupportedLanguage;
+  isSafe?: boolean;
+  safeTimestamp?: string | null;
+  onUndoSafe?: () => void;
 }
 
 export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
@@ -20,7 +23,10 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
   onPersonaChange,
   onSafeClick,
   onSosClick,
-  currentLang
+  currentLang,
+  isSafe = false,
+  safeTimestamp = null,
+  onUndoSafe
 }) => {
   const [completed, setCompleted] = useState<Record<number, boolean>>({});
   const [speaking, setSpeaking] = useState(false);
@@ -201,17 +207,35 @@ export const SafetyChecklist: React.FC<SafetyChecklistProps> = ({
       {/* Emergency Status Actions ("I'm Safe" and "SOS") */}
       <div className="pt-6 border-t border-[#EADBCA] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onSafeClick}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E6F5ED] text-[#4CAF7A] hover:bg-[#4CAF7A] hover:text-white text-xs font-bold transition-all border border-[#4CAF7A]/30 cursor-pointer shadow-sm"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>{getTranslation(currentLang, 'im_safe_btn')}</span>
-          </button>
-          <span className="text-xs text-[#6F6A60] hidden sm:inline">
-            {getTranslation(currentLang, 'im_safe_desc')}
-          </span>
+          {isSafe ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#E6F5ED] text-[#4CAF7A] border border-[#4CAF7A]/30 text-xs font-bold animate-in fade-in">
+              <CheckCircle className="w-4 h-4 text-[#4CAF7A]" />
+              <span>Welfare Registered: Confirmed Safe {safeTimestamp ? `(${safeTimestamp})` : ''}</span>
+              {onUndoSafe && (
+                <button
+                  type="button"
+                  onClick={onUndoSafe}
+                  className="ml-1 text-[11px] underline text-[#6F6A60] hover:text-[#D9453D] cursor-pointer"
+                >
+                  Undo
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onSafeClick}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E6F5ED] text-[#4CAF7A] hover:bg-[#4CAF7A] hover:text-white text-xs font-bold transition-all border border-[#4CAF7A]/30 cursor-pointer shadow-sm"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>{getTranslation(currentLang, 'im_safe_btn')}</span>
+              </button>
+              <span className="text-xs text-[#6F6A60] hidden sm:inline">
+                {getTranslation(currentLang, 'im_safe_desc')}
+              </span>
+            </>
+          )}
         </div>
 
         <button

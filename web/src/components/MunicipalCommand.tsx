@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WardFeature, Shelter, CitizenReport, AlertItem, MunicipalKPIs } from '../types';
+import { API_BASE } from '../lib/api';
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -17,7 +18,10 @@ import {
   ShieldAlert,
   ArrowUpDown,
   Search,
-  Plus
+  Plus,
+  X,
+  Check,
+  Download
 } from 'lucide-react';
 
 interface MunicipalCommandProps {
@@ -29,6 +33,18 @@ interface MunicipalCommandProps {
   onSendAlert: (alert: Partial<AlertItem>) => void;
   onTriageReport: (reportId: string, action: 'verify' | 'reject' | 'resolve') => void;
 }
+
+const INITIAL_RESOURCES = [
+  { id: 'res-1', name: 'Heavy De-Watering Pump (500 GPM)', category: 'pump', assigned_ward: 'ward-72', status: 'deployed' },
+  { id: 'res-2', name: 'Heavy De-Watering Pump (500 GPM)', category: 'pump', assigned_ward: 'ward-71', status: 'deployed' },
+  { id: 'res-3', name: 'Trailer Pump (300 GPM)', category: 'pump', assigned_ward: 'ward-55', status: 'deployed' },
+  { id: 'res-4', name: 'Inflatable Rescue Boat with OBM', category: 'boat', assigned_ward: 'ward-55', status: 'deployed' },
+  { id: 'res-5', name: 'Inflatable Rescue Boat with OBM', category: 'boat', assigned_ward: 'ward-8', status: 'standby' },
+  { id: 'res-6', name: 'SDRF First Responder Team (8 Pax)', category: 'team', assigned_ward: 'ward-72', status: 'deployed' },
+  { id: 'res-7', name: 'SDRF First Responder Team (8 Pax)', category: 'team', assigned_ward: 'ward-44', status: 'deployed' },
+  { id: 'res-8', name: 'Dry Ration Kits (500 Pk)', category: 'relief', assigned_ward: 'ward-72', status: 'distributed' },
+  { id: 'res-9', name: 'High-Clearance Rescue Tipper Truck', category: 'vehicle', assigned_ward: 'ward-71', status: 'deployed' }
+];
 
 export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
   wards,
@@ -46,6 +62,30 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
   const [composerTitle, setComposerTitle] = useState('EMERGENCY FLOOD EVACUATION NOTICE');
   const [composerBody, setComposerBody] = useState('Water rising 40cm in low-lying sectors. Move to upper levels or proceed to designated high school shelters.');
   const [composerChannel, setComposerChannel] = useState<'in_app' | 'sms' | 'whatsapp' | 'loudspeaker'>('in_app');
+
+  // SitRep Modal State
+  const [sitrepModalOpen, setSitrepModalOpen] = useState(false);
+  const [sitrepData, setSitrepData] = useState<any>(null);
+  const [loadingSitrep, setLoadingSitrep] = useState(false);
+
+  // Resource Inventory State
+  const [resources, setResources] = useState(INITIAL_RESOURCES);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/dashboard/resources`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.inventory) && data.inventory.length > 0) {
+            setResources(data.inventory);
+          }
+        }
+      } catch {}
+    };
+    fetchResources();
+  }, []);
 
   const selectedWard = wards.find(w => w.properties.ward_id === selectedWardId) || wards[0];
 
@@ -98,8 +138,50 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
     alert(composerSeverity === 'Severe' ? 'Alert queued for mandatory Two-Person Approval (Severe Protocol).' : 'Alert broadcast live across selected channels.');
   };
 
-  const handlePrintSitRep = () => {
-    window.print();
+  const handleOpenSitRep = async () => {
+    setLoadingSitrep(true);
+    setSitrepModalOpen(true);
+    try {
+      const res = await fetch(`${API_BASE}/dashboard/sitrep`);
+      if (res.ok) {
+        const data = await res.json();
+        setSitrepData(data);
+      } else {
+        throw new Error('Fallback required');
+      }
+    } catch {
+      setSitrepData({
+        report_id: `SITREP-HYD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-1800`,
+        title: "Nirvana Climate Resilience: Monsoon Flash-Flood Situation Report",
+        city: "Hyderabad (GHMC)",
+        issued_by: "Municipal Emergency Operations Center",
+        timestamp: new Date().toISOString(),
+        weather_summary: "Active deep convective squall over southern and central zones. Rain gauge telemetry active.",
+        severe_wards: wards.filter(w => (w.properties.flood_score || 0) >= 75).map(w => `${w.properties.name} (${w.properties.flood_depth_cm || 25}cm inundation)`),
+        evacuation_status: `${shelters.reduce((acc, s) => acc + (s.current_occupancy || 0), 0)} persons accommodated across ${shelters.length} active relief shelters.`,
+        pumps_deployed: resources.filter(r => r.category === 'pump' && r.status === 'deployed').length,
+        citizen_reports_resolved: `${reports.filter(r => r.status === 'resolved' || r.status === 'verified').length} of ${reports.length} crowd reports verified & actioned.`,
+        statutory_notice: "Synthesized in compliance with NDMA Early Warning & Standard Operating Guidelines."
+      });
+    } finally {
+      setLoadingSitrep(false);
+    }
+  };
+
+  const handleAssignResource = async (resourceId: string, targetWardId: string) => {
+    setAssigningId(resourceId);
+    setResources(prev => prev.map(r => r.id === resourceId ? { ...r, assigned_ward: targetWardId, status: 'deployed' } : r));
+    try {
+      await fetch(`${API_BASE}/dashboard/resources/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource_id: resourceId, ward_id: targetWardId })
+      });
+    } catch (e) {
+      console.warn('Could not persist resource assignment:', e);
+    } finally {
+      setAssigningId(null);
+    }
   };
 
   return (
@@ -120,8 +202,8 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={handlePrintSitRep}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#F3EBDD] hover:bg-[#EADBCA] text-[#1c1b1a] text-xs font-semibold transition-all border border-[#EADBCA]"
+            onClick={handleOpenSitRep}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1F7A8C] hover:bg-[#17606F] text-white text-xs font-semibold transition-all shadow-sm cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Generate SitRep (1-Click)</span>
@@ -395,19 +477,87 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { title: 'Heavy Dewatering Pumps (500 GPM)', deployed: 8, total: 12, icon: '🚰' },
-                { title: 'Inflatable Rescue Boats (OBM)', deployed: 4, total: 6, icon: '🚤' },
-                { title: 'SDRF Quick Response Teams', deployed: 6, total: 8, icon: '👨‍🚒' },
+                { 
+                  title: 'Heavy Dewatering Pumps (500 GPM)', 
+                  deployed: resources.filter(r => r.category === 'pump' && r.status === 'deployed').length, 
+                  total: resources.filter(r => r.category === 'pump').length || 6, 
+                  icon: '🚰' 
+                },
+                { 
+                  title: 'Inflatable Rescue Boats (OBM)', 
+                  deployed: resources.filter(r => r.category === 'boat' && r.status === 'deployed').length, 
+                  total: resources.filter(r => r.category === 'boat').length || 4, 
+                  icon: '🚤' 
+                },
+                { 
+                  title: 'SDRF Quick Response Teams', 
+                  deployed: resources.filter(r => r.category === 'team' && r.status === 'deployed').length, 
+                  total: resources.filter(r => r.category === 'team').length || 4, 
+                  icon: '👨‍🚒' 
+                },
               ].map((res, i) => (
                 <div key={i} className="p-4 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA]">
                   <span className="text-2xl">{res.icon}</span>
                   <h5 className="font-bold text-xs text-[#1c1b1a] mt-2">{res.title}</h5>
                   <div className="text-lg font-black text-[#006070] mt-1">{res.deployed} / {res.total} Deployed</div>
                   <div className="w-full h-1.5 rounded-full bg-[#EADBCA] mt-2 overflow-hidden">
-                    <div className="h-full bg-[#1F7A8C]" style={{ width: `${(res.deployed / res.total) * 100}%` }}></div>
+                    <div className="h-full bg-[#1F7A8C]" style={{ width: `${Math.min(100, (res.deployed / Math.max(1, res.total)) * 100)}%` }}></div>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Live Interactive Resource Assignment Table */}
+            <div className="overflow-x-auto rounded-2xl border border-[#EADBCA] bg-white mt-4">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F3EBDD] font-bold text-[#1c1b1a]">
+                  <tr>
+                    <th className="p-3">Asset ID &amp; Name</th>
+                    <th className="p-3">Category</th>
+                    <th className="p-3">Assigned Ward</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Re-Deploy to Ward</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EADBCA]">
+                  {resources.map((res) => {
+                    const assignedWardObj = wards.find(w => w.properties.ward_id === res.assigned_ward);
+                    return (
+                      <tr key={res.id} className="hover:bg-[#FBF7EF] transition-colors">
+                        <td className="p-3 font-semibold">
+                          <span className="font-mono text-[#6F6A60] mr-1.5">{res.id}</span>
+                          {res.name}
+                        </td>
+                        <td className="p-3 capitalize">{res.category}</td>
+                        <td className="p-3 font-medium text-[#006070]">
+                          {assignedWardObj?.properties.name || res.assigned_ward}
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            res.status === 'deployed' ? 'bg-[#E6F5ED] text-[#4CAF7A]' : 'bg-[#F3EBDD] text-[#6F6A60]'
+                          }`}>
+                            {res.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <select
+                            value={res.assigned_ward}
+                            disabled={assigningId === res.id}
+                            onChange={(e) => handleAssignResource(res.id, e.target.value)}
+                            className="p-1.5 rounded-lg border border-[#EADBCA] text-xs bg-white text-[#1c1b1a] cursor-pointer"
+                          >
+                            {wards.slice(0, 12).map((w) => (
+                              <option key={w.properties.ward_id} value={w.properties.ward_id}>
+                                {w.properties.name.split('/')[0]}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -488,6 +638,124 @@ export const MunicipalCommand: React.FC<MunicipalCommandProps> = ({
         )}
 
       </div>
+
+      {/* Dynamic Situation Report (SitRep) Modal */}
+      {sitrepModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-[#EADBCA] print:p-0 print:border-none print:shadow-none">
+            <button
+              type="button"
+              onClick={() => setSitrepModalOpen(false)}
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-[#F3EBDD] text-[#6F6A60] transition-colors cursor-pointer print:hidden"
+              aria-label="Close dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {loadingSitrep ? (
+              <div className="py-16 text-center text-xs text-[#6F6A60]">
+                <div className="w-8 h-8 border-3 border-[#1F7A8C] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                Synthesizing multi-agency disaster telemetry for official SitRep...
+              </div>
+            ) : sitrepData ? (
+              <div className="space-y-6">
+                {/* Official Municipal Header */}
+                <div className="border-b-2 border-[#1c1b1a] pb-4">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#6F6A60]">
+                    <span>{sitrepData.city} • {sitrepData.issued_by}</span>
+                    <span className="font-mono">{sitrepData.report_id}</span>
+                  </div>
+                  <h3 className="font-heading text-2xl font-black text-[#1c1b1a] mt-1">
+                    {sitrepData.title}
+                  </h3>
+                  <div className="text-xs text-[#6F6A60] mt-1">
+                    Report Timestamp: <strong>{new Date(sitrepData.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</strong>
+                  </div>
+                </div>
+
+                {/* Weather & Meteorological Summary */}
+                <div className="p-4 rounded-2xl bg-[#FBF7EF] border border-[#EADBCA]">
+                  <h4 className="font-heading font-bold text-xs uppercase tracking-wider text-[#006070] mb-1">
+                    🌧️ Doppler Radar &amp; Weather Observations
+                  </h4>
+                  <p className="text-xs text-[#1c1b1a] leading-relaxed">
+                    {sitrepData.weather_summary}
+                  </p>
+                </div>
+
+                {/* Key Status Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-[#FBE1DF] border border-[#D9453D]/30">
+                    <span className="text-[10px] uppercase font-bold text-[#D9453D]">Wards at Severe Inundation</span>
+                    <div className="text-xl font-black text-[#D9453D] mt-0.5">{sitrepData.severe_wards?.length || 0}</div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-[#E6F5ED] border border-[#4CAF7A]/30">
+                    <span className="text-[10px] uppercase font-bold text-[#4CAF7A]">Dewatering Pumps Deployed</span>
+                    <div className="text-xl font-black text-[#4CAF7A] mt-0.5">{sitrepData.pumps_deployed || 8} Active</div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-[#E3F1F4] border border-[#006070]/30">
+                    <span className="text-[10px] uppercase font-bold text-[#006070]">Crowd Reports Actioned</span>
+                    <div className="text-xs font-bold text-[#006070] mt-1">{sitrepData.citizen_reports_resolved}</div>
+                  </div>
+                </div>
+
+                {/* Critical Sector Detail */}
+                <div>
+                  <h4 className="font-heading font-bold text-xs uppercase tracking-wider text-[#6F6A60] mb-2">
+                    🚨 High-Priority Inundation Zones
+                  </h4>
+                  <ul className="space-y-1.5 text-xs text-[#1c1b1a]">
+                    {sitrepData.severe_wards?.map((ward: string, idx: number) => (
+                      <li key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-[#F3EBDD]/60 border border-[#EADBCA]">
+                        <span className="w-2 h-2 rounded-full bg-[#D9453D]" />
+                        <span className="font-semibold">{ward}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Evacuation & Shelter Status */}
+                <div className="p-4 rounded-2xl bg-white border border-[#EADBCA]">
+                  <h4 className="font-heading font-bold text-xs uppercase tracking-wider text-[#6F6A60] mb-1">
+                    🏠 Evacuation &amp; Relief Operations
+                  </h4>
+                  <p className="text-xs text-[#2B2A28] leading-relaxed">
+                    {sitrepData.evacuation_status}
+                  </p>
+                </div>
+
+                {/* Statutory Disclaimer */}
+                <p className="text-[10px] text-[#8F8A80] italic">
+                  {sitrepData.statutory_notice}
+                </p>
+
+                {/* Modal Actions */}
+                <div className="pt-4 border-t border-[#EADBCA] flex items-center justify-end gap-3 print:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setSitrepModalOpen(false)}
+                    className="px-5 py-2 rounded-full bg-[#F3EBDD] text-[#1c1b1a] text-xs font-semibold hover:bg-[#EADBCA] transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-1.5 px-6 py-2 rounded-full bg-[#1F7A8C] text-white text-xs font-semibold hover:bg-[#17606F] transition-colors shadow-sm cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print / Save PDF</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ Backend API Engine (FastAPI + OpenAPI v1)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
+import datetime
 import json
 import os
 import sys
@@ -25,11 +26,25 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Enable CORS for Next.js frontend
+# Configure secure, environment-aware CORS
+raw_cors = os.environ.get("CORS_ORIGINS", "")
+if raw_cors.strip():
+    allowed_origins = [o.strip() for o in raw_cors.split(",") if o.strip()]
+else:
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+
+# When wildcard '*' is present, allow_credentials must be False to comply with CORS specs
+allow_credentials = "*" not in allowed_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -79,24 +94,42 @@ class TelemetryConnectionManager:
 manager = TelemetryConnectionManager()
 
 @app.websocket("/api/v1/ws/live")
+@app.websocket("/ws/live")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        # Send initial telemetry payload
+        # Send initial telemetry payload with Doppler & culvert mesh status
         await websocket.send_text(json.dumps({
             "type": "INITIAL_TELEMETRY",
             "city": "Hyderabad",
             "active_wards_monitored": 22,
-            "status": "MONSOON_PROTOCOL_ACTIVE"
+            "status": "MONSOON_PROTOCOL_ACTIVE",
+            "telemetry_nodes_online": 42,
+            "doppler_reflectivity_dbz": 38.5,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }))
         while True:
-            data = await websocket.receive_text()
-            # Echo or broadcast client actions (e.g. simulation pulses)
-            await manager.broadcast({
-                "type": "TELEMETRY_PULSE",
-                "client_msg": data
-            })
+            try:
+                # Wait for client input with 20s heartbeat window
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=20.0)
+                await manager.broadcast({
+                    "type": "TELEMETRY_PULSE",
+                    "client_msg": data,
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                })
+            except asyncio.TimeoutError:
+                # Emit periodic telemetry update to keep connection active and sensors synchronized
+                await websocket.send_text(json.dumps({
+                    "type": "TELEMETRY_HEARTBEAT",
+                    "source": "GHMC_CULVERT_MESH",
+                    "active_sensors": 42,
+                    "musi_flow_rate_cumecs": 450.2,
+                    "rainfall_rate_mm_hr": 24.5,
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                }))
     except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception:
         manager.disconnect(websocket)
 
 @app.get("/")

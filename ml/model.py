@@ -3,8 +3,31 @@ Nirvana Risk Engine: Physically-Informed + Machine Learning Risk Estimator with 
 Combines baseline hydrological rules with calibrated tree-based classification and factor decomposition.
 """
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
+import os
 import math
+import logging
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+_ML_BUNDLE: Optional[Dict[str, Any]] = None
+_ML_LOAD_ATTEMPTED: bool = False
+
+def get_ml_bundle() -> Optional[Dict[str, Any]]:
+    global _ML_BUNDLE, _ML_LOAD_ATTEMPTED
+    if not _ML_LOAD_ATTEMPTED:
+        _ML_LOAD_ATTEMPTED = True
+        model_path = os.path.join(os.path.dirname(__file__), "nirvana_flood_gb.joblib")
+        if os.path.exists(model_path):
+            try:
+                import joblib
+                _ML_BUNDLE = joblib.load(model_path)
+                logger.info("Loaded Nirvana Gradient Boosting model from %s", model_path)
+            except Exception as e:
+                logger.warning("Failed to load Nirvana ML model: %s", e)
+                _ML_BUNDLE = None
+    return _ML_BUNDLE
 
 class FloodRiskEngine:
     """
@@ -12,6 +35,73 @@ class FloodRiskEngine:
     Layer 1: Rule-based physically-informed baseline (elevation, slope, TWI, HAND, drainage condition).
     Layer 2: ML-calibrated model with factor contribution breakdown (SHAP proxy).
     """
+
+    @classmethod
+    def calculate_blended_risk(cls, features: Dict[str, Any]) -> Tuple[float, str, int, float]:
+        """
+        Calculates blended risk score combining physically-informed hydrological baseline
+        with scikit-learn Gradient Boosting ML inference (when available).
+        """
+        baseline_score, baseline_level, depth_cm, baseline_conf = cls.calculate_baseline(features)
+        
+        bundle = get_ml_bundle()
+        if not bundle or "model" not in bundle or "features" not in bundle:
+            return baseline_score, baseline_level, depth_cm, baseline_conf
+        
+        try:
+            model = bundle["model"]
+            feat_names = bundle["features"]
+            
+            rain_1h = float(features.get("rain_1h_mm", 0.0))
+            rain_3h = float(features.get("rain_3h_mm", 0.0))
+            rain_24h = float(features.get("rain_24h_mm", rain_3h * 2.2))
+            elevation = float(features.get("elevation_m", 500.0))
+            slope = float(features.get("slope_deg", 1.2))
+            twi = float(features.get("twi", 10.0))
+            hand = float(features.get("hand_m", 2.0))
+            drain_raw = features.get("drainage_health", "Clear")
+            drain_val = 2.0 if drain_raw == "Blocked" else (1.0 if drain_raw == "Partially Blocked" else 0.0)
+            impervious = float(features.get("impervious_fraction", 0.8))
+            musi_dist = float(features.get("musi_proximity_km", 5.0))
+            
+            feature_dict = {
+                "rain_1h_mm": rain_1h,
+                "rain_3h_mm": rain_3h,
+                "rain_24h_mm": rain_24h,
+                "elevation_m": elevation,
+                "slope_deg": slope,
+                "twi": twi,
+                "hand_m": hand,
+                "drain_health": drain_val,
+                "impervious_fraction": impervious,
+                "musi_dist_km": musi_dist
+            }
+            
+            df_in = pd.DataFrame([[feature_dict[col] for col in feat_names]], columns=feat_names)
+            ml_prob = float(model.predict_proba(df_in)[0][1])
+            ml_score = ml_prob * 100.0
+            
+            # Blend: 55% physical baseline + 45% ML probability
+            blended_score = round(min(100.0, max(0.0, (0.55 * baseline_score) + (0.45 * ml_score))), 1)
+            
+            if blended_score >= 75:
+                level = "Severe"
+                depth_cm = int(25 + (blended_score - 75) * 1.5)
+            elif blended_score >= 55:
+                level = "High"
+                depth_cm = int(12 + (blended_score - 55) * 0.6)
+            elif blended_score >= 35:
+                level = "Moderate"
+                depth_cm = int(4 + (blended_score - 35) * 0.4)
+            else:
+                level = "Low"
+                depth_cm = max(0, int(blended_score * 0.1))
+                
+            conf = min(98.0, baseline_conf + 4.0)
+            return blended_score, level, depth_cm, conf
+        except Exception as exc:
+            logger.warning("ML blending fallback: %s", exc)
+            return baseline_score, baseline_level, depth_cm, baseline_conf
 
     @staticmethod
     def calculate_baseline(features: Dict[str, Any]) -> Tuple[float, str, int, float]:
